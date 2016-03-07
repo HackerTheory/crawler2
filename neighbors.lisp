@@ -19,7 +19,7 @@
   (with-slots (width height) stage
     (with-slots (x y) tile
       (labels ((change-coords (nx ny)
-                 (values (+ x nx) (- y ny)))
+                 (values (+ x nx) (+ y ny)))
                (in-neighborhood-pred (nx ny)
                  (and (<= (abs nx) distance)
                       (<= (abs ny) distance)
@@ -47,10 +47,10 @@
   (nref s n 0 0))
 
 (defmethod n (s n &optional (distance 1))
-  (nref s n 0 (- distance)))
+  (nref s n 0 distance))
 
 (defmethod s (s n &optional (distance 1))
-  (nref s n 0 distance))
+  (nref s n 0 (- distance)))
 
 (defmethod e (s n &optional (distance 1))
   (nref s n distance 0))
