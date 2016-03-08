@@ -61,8 +61,6 @@
       (labels ((change-coords (nx ny)
                  (values (+ x nx) (+ y ny)))
                (in-neighborhood-pred (nx ny)
-                 ;; is NX,NY in the circle of radius RADIUS centered
-                 ;; about the origin of the neighborhood?
                  (<= (+ (* nx nx) (* ny ny)) (* radius radius)))
                (on-stage-pred (nx ny)
                  (when (in-neighborhood-pred nx ny)
@@ -80,8 +78,6 @@
       (labels ((change-coords (nx ny)
                  (values (+ x nx) (+ y ny)))
                (in-neighborhood-pred (nx ny)
-                 ;; is NX,NY in the square defined by +/- distance in each
-                 ;; axis from the origin at the center?
                  (and (>= nx (- distance))
                       (>= ny (- distance))
                       (<= nx distance)
@@ -95,9 +91,6 @@
                        :in-neighborhood-pred #'in-neighborhood-pred
                        :on-stage-pred #'on-stage-pred
                        :change-coords #'change-coords)))))
-
-
-
 
 (defmethod nref (stage n nx ny)
   (when (funcall (on-stage-pred n) nx ny)
@@ -132,80 +125,59 @@
 (defmethod ne (s n &optional (distance 1))
   (nref s n distance distance))
 
-(defun display-neighborhood (s n xmin xmax ymin ymax)
-  "Display a rectangle defined by XMIN, XMAX and YMIN, YMAX out of the
-neighborhood N using stage S. N is displayed if that tile in the
-neighborhood is not a member of the neighborhood at that location in
-the neighborhood and T if it is a member."
-  (format t "NH: (xmin ~A, xmax ~A) (ymin ~A, ymax ~A)~%"
-          xmin xmax ymin ymax)
-  ;; Carefully draw the region such that pos-y axis is upwards and pos-x
-  ;; axis is rightwards.
-  (loop :for row :from 0 :below (1+ (abs (- ymax ymin))) :do
-     (loop :for col :from 0 :below (1+ (abs (- xmax xmin))) :do
-        (let ((nx (+ xmin col))
-              (ny (- ymax row)))
-          (format t "~:[N~;T~]" (nref s n nx ny))))
-     (format t "~%"))
+(defun display-neighborhood (s n x-min x-max y-min y-max)
+  (format t "Display: (X: ~A..~A) (Y: ~A..~A)~%" x-min x-max y-min y-max)
+  (loop :for row :to (abs (- y-max y-min))
+        :do (loop :for col :to (abs (- x-max x-min))
+                  :for x = (+ x-min col)
+                  :for y = (- y-max row)
+                  :do (format t "~:[.~;X~]" (nref s n x y)))
+            (format t "~%"))
   (format t "~%"))
 
-
-
 (defun neighbor-ortho-test (x y)
-  (format t "NH ortho test.~%")
-  (let* ((stage (make-stage 'labyrinth :room-size-max 99))
+  (format t "Orthogonal neighbor test.~%")
+  (let* ((stage (make-stage 'labyrinth))
          (nh (neighborhood-ortho stage (tile stage x y) 5)))
-
-    (format t "Origin: ~S~%N:~S~%S:~S~%E:~S~%W:~S~%"
+    (format t "Origin: ~S~%(N 5) must be T: ~S~%(NE 1) must be NIL: ~S~%(E 5) must be T: ~S~%"
             (origin stage nh)
-            (n stage nh)
-            (s stage nh)
-            (e stage nh)
-            (w stage nh))
-
+            (n stage nh 5)
+            (ne stage nh)
+            (e stage nh 5))
     (display-neighborhood stage nh -10 10 -10 10)))
 
 (defun neighbor-diag-test (x y)
-  (format t "NH diag test.~%")
-  (let* ((stage (make-stage 'labyrinth :room-size-max 99))
+  (format t "Diagonal neighborhood test.~%")
+  (let* ((stage (make-stage 'labyrinth))
          (nh (neighborhood-diag stage (tile stage x y) 5)))
-
-    (format t "Origin: ~S~%N:~S~%S:~S~%E:~S~%W:~S~%"
+    (format t "Origin: ~S~%(N 1) must be NIL: ~S~%(NE 5) must be T: ~S~%(E 1) must be NIL: ~S~%"
             (origin stage nh)
             (n stage nh)
-            (s stage nh)
-            (e stage nh)
-            (w stage nh))
-
+            (ne stage nh 5)
+            (e stage nh))
     (display-neighborhood stage nh -10 10 -10 10)))
 
 (defun neighbor-circle-test (x y)
-  (format t "NH circle test.~%")
-  (let* ((stage (make-stage 'labyrinth :room-size-max 99))
+  (format t "Circle neighborhood test.~%")
+  (let* ((stage (make-stage 'labyrinth))
          (nh (neighborhood-circle stage (tile stage x y) 5)))
-
     (format t "Origin: ~S~%(N 5) must be T: ~S~%(NE 5) must be NIL: ~S~%(E 5) must be T: ~S~%"
             (origin stage nh)
             (n stage nh 5)
             (ne stage nh 5)
             (e stage nh 5))
-
     (display-neighborhood stage nh -10 10 -10 10)))
 
-
 (defun neighbor-square-test (x y)
-  (format t "NH square test.~%")
-  (let* ((stage (make-stage 'labyrinth :room-size-max 99))
+  (format t "Square neighborhood test.~%")
+  (let* ((stage (make-stage 'labyrinth))
          (nh (neighborhood-square stage (tile stage x y) 5)))
-
     (format t "Origin: ~S~%(N 5) must be T: ~S~%(NE 5) must be T: ~S~%(E 5) must be T: ~S~%"
             (origin stage nh)
             (n stage nh 5)
             (ne stage nh 5)
             (e stage nh 5))
-
     (display-neighborhood stage nh -10 10 -10 10)))
-
 
 (defun neighbor-tests (x y)
   (neighbor-ortho-test x y)
