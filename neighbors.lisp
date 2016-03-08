@@ -49,14 +49,27 @@
 (defmethod n (s n &optional (distance 1))
   (nref s n 0 distance))
 
+(defmethod nw (s n &optional (distance 1))
+  (nref s n (- distance) distance))
+
+(defmethod w (s n &optional (distance 1))
+  (nref s n (- distance) 0))
+
+(defmethod sw (s n &optional (distance 1))
+  (nref s n (- distance) (- distance)))
+
 (defmethod s (s n &optional (distance 1))
   (nref s n 0 (- distance)))
+
+(defmethod se (s n &optional (distance 1))
+  (nref s n distance (- distance)))
 
 (defmethod e (s n &optional (distance 1))
   (nref s n distance 0))
 
-(defmethod w (s n &optional (distance 1))
-  (nref s n (- distance) 0))
+(defmethod ne (s n &optional (distance 1))
+  (nref s n distance distance))
+
 
 (defun neighbor-test (x y)
   (let* ((stage (make-stage 'labyrinth))
