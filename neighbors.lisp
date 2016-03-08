@@ -139,7 +139,7 @@ neighborhood is not a member of the neighborhood at that location in
 the neighborhood and T if it is a member."
   (format t "NH: (xmin ~A, xmax ~A) (ymin ~A, ymax ~A)~%"
           xmin xmax ymin ymax)
-  ;; Carefully draw the region such that pos-y axis is upwards and pos-x 
+  ;; Carefully draw the region such that pos-y axis is upwards and pos-x
   ;; axis is rightwards.
   (loop :for row :from 0 :below (1+ (abs (- ymax ymin))) :do
      (loop :for col :from 0 :below (1+ (abs (- xmax xmin))) :do
