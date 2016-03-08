@@ -27,13 +27,16 @@
       (floor (* (/ (* width height) average)
                 (clamp room-density 0.1 1))))))
 
-(defmethod intersectsp ((stage labyrinth) (room labyrinth-room))
-  (loop :for existing in (rooms stage)
-        :when (and (<= (x1 room) (x2 existing))
-                   (>= (x2 room) (x1 existing))
-                   (<= (y1 room) (y2 existing))
-                   (>= (y2 room) (y1 existing)))
-          :do (return room)))
+(defmethod intersectsp ((source labyrinth-room) (target labyrinth-room))
+  (and (> (x2 source) (x1 target))
+       (< (x1 source) (x2 target))
+       (> (y2 source) (y1 target))
+       (< (y1 source) (y2 target))))
+
+(defmethod intersectsp ((source labyrinth-room) (target labyrinth))
+  (dolist (target (rooms target))
+    (when (intersectsp source target)
+      (return target))))
 
 (defmethod place-room ((stage labyrinth) (room labyrinth-room))
   (with-slots (x1 x2 y1 y2) room
@@ -52,10 +55,8 @@
            (x (rng 'odd :max (- width w)))
            (y (rng 'odd :max (- height h)))
            (room (make-instance 'labyrinth-room :x1 x :y1 y :w w :h h)))
-      (if (< (/ (min w h) (max w h)) (rng 'inc))
-          (make-room stage)
-          (unless (intersectsp stage room)
-            (place-room stage room))))))
+      (unless (intersectsp room stage)
+            (place-room stage room)))))
 
 (defmethod add-rooms ((stage labyrinth))
   (loop :with max = (estimate-rooms stage)
