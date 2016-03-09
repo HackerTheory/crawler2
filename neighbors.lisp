@@ -3,8 +3,8 @@
 ;; all neighborhoods are closed regions of space.
 
 (defclass neighborhood ()
-  ((stage :reader stage
-          :initarg :stage)
+  ((%stage :reader stage
+           :initarg :stage)
 
    ;; The tile around which this neighborhood exists.
    ;; TODO: However, I actually don't think this needs to be here.
@@ -12,35 +12,37 @@
    ;; and then we don't need to perform ANY tile lookups pre-emptively
    ;; until we actually need to. Then, neighborhoods are effectively FREE
    ;; unless you _actually_ look something up in them.
-   (origin-tile :reader origin-tile
-                :initarg :origin-tile)
+   (%origin-tile :reader origin-tile
+                 :initarg :origin-tile)
 
    ;; Define a square centered around the origin which must contain the
    ;; whole of the neighborhod function defined by nh-set-fn.
-   (distance :reader distance
-             :initarg :distance)
+   (%distance :reader distance
+              :initarg :distance)
 
    ;; The function which defines the neighborhood set in terms of the
    ;; neighborhood coordinate system. It accepts neighborhood coords
    ;; of nx and ny and return T or NIL if it is in the neighborhood
    ;; definition set.
-   (nh-set-fn :reader nh-set-fn
-              :initarg :nh-set-fn)
+   (%nh-set-fn :reader nh-set-fn
+               :initarg :nh-set-fn)
 
    ;; The map function which maps a function across the tiles
    ;; found in the neighborhood (which are also clipped by the stage).
    ;; Normally, there is a specific optimized function here for the
    ;; particular neighborhood that was created, but initially it'll have
    ;; a default one that will always work, just be unoptimized.
-   (nh-map-fn :reader nh-map-fn
-              :initarg :nh-map-fn))
+   (%nh-map-fn :reader nh-map-fn
+               :initarg :nh-map-fn))
 
   )
 
-;; The nh's origin is at the tile and the axis all point the same way,
+;; The nh's origin is at a tile and the axis all point the same way,
 ;; so it is an easy offset to convert nh coords into stage coords.
-;; All neighborhood reference frames are identical.
-(defmethod change-coord ((n neighborhood) nx ny)
+;; All neighborhood reference frames are identical. This also doesn't
+;; clip the coord against valid stage boundaries, so the value you get
+;; back could be off the stage.
+(defmethod get-stage-coord ((n neighborhood) nx ny)
   (let ((ot (origin-tile n)))
     (values (+ (x ot) nx)
             (+ (y ot) ny))))
@@ -51,6 +53,11 @@
 (defmethod map-nh ((n neighborhood) func)
   (funcall (nh-map-fn n) n func))
 
+;; Determine if nx/ny considered in the set defined by the nh-set-fn.
+;; This does no clipping to the stage.
+(defmethod in-set-p ((n neighborhood) nx ny)
+  (funcall (nh-set-fn n) nx ny))
+
 ;; The default map function which is not optimized for any specific
 ;; neighborhood.  All it does is just scan the maximal region in which
 ;; the nh is contained and then if a tile is actually valid calls the
@@ -59,7 +66,7 @@
 ;; neighborhood.
 (defun nh-default-map-fn (n func)
   (let ((results ()))
-    (with-slots (distance) n
+    (with-accessors ((distance distance)) n
       (loop :for y :from distance :downto (- distance) :do
          (loop :for x :from (- distance) :to distance :do
             (let ((tile (nref n x y)))
@@ -78,17 +85,15 @@
                  :nh-map-fn map-fn))
 
 (defmethod nref ((n neighborhood) nx ny)
-  ;; First we see if nx/ny is in the defined nh set for this neighborhood
-  (let ((in-nh-set-p (funcall (nh-set-fn n) nx ny)))
-    ;; If so, we keep going and do more work to find it.
-    (when in-nh-set-p
-      ;; Transform the defined nh position into a position on the stage.
-      (multiple-value-bind (sx sy) (change-coord n nx ny)
-        ;; Clip the valid nh location against the stage.
-        (when (valid-tile-p (stage n) sx sy)
-          ;; The NH location resolved to a valid tile on the stage.
-          ;; Return the tile found!
-          (tile (stage n) sx sy))))))
+  ;; If nx/ny is in the NH set, keep going.
+  (when (in-set-p n nx ny)
+    ;; Transform the defined nh position into a position on the stage.
+    (multiple-value-bind (sx sy) (get-stage-coord n nx ny)
+      ;; Clip the valid nh location against the stage.
+      (when (valid-tile-p (stage n) sx sy)
+        ;; The NH location resolved to a valid tile on the stage.
+        ;; Return the tile found!
+        (tile (stage n) sx sy)))))
 
 ;; Some accessor methods into a neighborhood.
 (defmethod origin (n)
@@ -155,7 +160,7 @@
 ;; Testing codes.
 
 (defun display-neighborhood (n)
-  (with-slots (distance) n
+  (with-accessors ((distance distance)) n
     (format t "  NH Display: distance = ~A~%" distance)
     (loop :for y :from distance :downto (- distance) :do
        (format t "    ")
