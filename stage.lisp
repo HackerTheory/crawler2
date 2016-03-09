@@ -17,6 +17,13 @@
     (setf width (max 10 width)
           height (max 10 height))))
 
+(defmethod valid-tile-p (stage x y)
+  (with-slots (height width) stage
+    (and (not (minusp x))
+         (< x width)
+         (not (minusp y))
+         (< y height))))
+
 (defmethod build (stage))
 
 (defmethod make-stage (stage-type &rest attrs)

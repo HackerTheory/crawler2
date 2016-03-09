@@ -1,186 +1,211 @@
 (in-package :crawler2)
 
+;; all neighborhoods are closed regions of space.
+
 (defclass neighborhood ()
-  ((change-coords :reader change-coords
-                  :initarg :change-coords)
-   (in-neighborhood-pred :reader in-neighborhood-pred
-                         :initarg :in-neighborhood-pred)
-   (on-stage-pred :reader on-stage-pred
-                  :initarg :on-stage-pred)))
+  ((stage :reader stage
+          :initarg :stage)
 
-(defmethod in-stage-p (stage x y)
-  (with-slots (height width) stage
-    (and (not (minusp x))
-         (< x width)
-         (not (minusp y))
-         (< y height))))
+   ;; The tile around which this neighborhood exists.
+   ;; TODO: However, I actually don't think this needs to be here.
+   ;; Maybe MAKE-NEIGHBORHOOD below should get an x y insted of a TILE
+   ;; and then we don't need to perform ANY tile lookups pre-emptively
+   ;; until we actually need to. Then, neighborhoods are effectively FREE
+   ;; unless you _actually_ look something up in them.
+   (origin-tile :reader origin-tile
+                :initarg :origin-tile)
 
-(defmethod neighborhood-ortho (stage tile distance)
-  (with-slots (width height) stage
-    (with-slots (x y) tile
-      (labels ((change-coords (nx ny)
-                 (values (+ x nx) (+ y ny)))
-               (in-neighborhood-pred (nx ny)
-                 (and (<= (abs nx) distance)
-                      (<= (abs ny) distance)
-                      (or (and (zerop nx) (zerop ny))
-                          (and (zerop nx) (not (zerop ny)))
-                          (and (not (zerop nx)) (zerop ny)))))
-               (on-stage-pred (nx ny)
-                 (when (in-neighborhood-pred nx ny)
-                   (multiple-value-bind (sx sy)
-                       (change-coords nx ny)
-                     (in-stage-p stage sx sy)))))
-        (make-instance 'neighborhood
-                       :in-neighborhood-pred #'in-neighborhood-pred
-                       :on-stage-pred #'on-stage-pred
-                       :change-coords #'change-coords)))))
+   ;; Define a square centered around the origin which must contain the
+   ;; whole of the neighborhod function defined by nh-set-fn.
+   (distance :reader distance
+             :initarg :distance)
 
-(defmethod neighborhood-diag (stage tile distance)
-  (with-slots (width height) stage
-    (with-slots (x y) tile
-      (labels ((change-coords (nx ny)
-                 (values (+ x nx) (+ y ny)))
-               (in-neighborhood-pred (nx ny)
-                 (and (<= (abs nx) distance)
-                      (<= (abs ny) distance)
-                      (= (abs nx) (abs ny))))
-               (on-stage-pred (nx ny)
-                 (when (in-neighborhood-pred nx ny)
-                   (multiple-value-bind (sx sy)
-                       (change-coords nx ny)
-                     (in-stage-p stage sx sy)))))
-        (make-instance 'neighborhood
-                       :in-neighborhood-pred #'in-neighborhood-pred
-                       :on-stage-pred #'on-stage-pred
-                       :change-coords #'change-coords)))))
+   ;; The function which defines the neighborhood set in terms of the
+   ;; neighborhood coordinate system. It accepts neighborhood coords
+   ;; of nx and ny and return T or NIL if it is in the neighborhood
+   ;; definition set.
+   (nh-set-fn :reader nh-set-fn
+              :initarg :nh-set-fn)
 
-(defmethod neighborhood-circle (stage tile radius)
-  (with-slots (width height) stage
-    (with-slots (x y) tile
-      (labels ((change-coords (nx ny)
-                 (values (+ x nx) (+ y ny)))
-               (in-neighborhood-pred (nx ny)
-                 (<= (+ (* nx nx) (* ny ny)) (* radius radius)))
-               (on-stage-pred (nx ny)
-                 (when (in-neighborhood-pred nx ny)
-                   (multiple-value-bind (sx sy)
-                       (change-coords nx ny)
-                     (in-stage-p stage sx sy)))))
-        (make-instance 'neighborhood
-                       :in-neighborhood-pred #'in-neighborhood-pred
-                       :on-stage-pred #'on-stage-pred
-                       :change-coords #'change-coords)))))
+   ;; The map function which maps a function across the tiles
+   ;; found in the neighborhood (which are also clipped by the stage).
+   ;; Normally, there is a specific optimized function here for the
+   ;; particular neighborhood that was created, but initially it'll have
+   ;; a default one that will always work, just be unoptimized.
+   (nh-map-fn :reader nh-map-fn
+              :initarg :nh-map-fn))
 
-(defmethod neighborhood-square (stage tile distance)
-  (with-slots (width height) stage
-    (with-slots (x y) tile
-      (labels ((change-coords (nx ny)
-                 (values (+ x nx) (+ y ny)))
-               (in-neighborhood-pred (nx ny)
-                 (and (>= nx (- distance))
-                      (>= ny (- distance))
-                      (<= nx distance)
-                      (<= ny distance)))
-               (on-stage-pred (nx ny)
-                 (when (in-neighborhood-pred nx ny)
-                   (multiple-value-bind (sx sy)
-                       (change-coords nx ny)
-                     (in-stage-p stage sx sy)))))
-        (make-instance 'neighborhood
-                       :in-neighborhood-pred #'in-neighborhood-pred
-                       :on-stage-pred #'on-stage-pred
-                       :change-coords #'change-coords)))))
+  )
 
-(defmethod nref (stage n nx ny)
-  (when (funcall (on-stage-pred n) nx ny)
-    (multiple-value-bind (sx sy)
-        (funcall (change-coords n) nx ny)
-      (tile stage sx sy))))
+;; The nh's origin is at the tile and the axis all point the same way,
+;; so it is an easy offset to convert nh coords into stage coords.
+;; All neighborhood reference frames are identical.
+(defmethod change-coord ((n neighborhood) nx ny)
+  (let ((ot (origin-tile n)))
+    (values (+ (x ot) nx)
+            (+ (y ot) ny))))
 
-(defmethod origin (s n)
-  (nref s n 0 0))
+;; Call whatever neighborhood map function exists in the neighborhood
+;; with the supplied func and collects the results into a list, an
+;; returns it.
+(defmethod map-nh ((n neighborhood) func)
+  (funcall (nh-map-fn n) n func))
 
-(defmethod n (s n &optional (distance 1))
-  (nref s n 0 distance))
+;; The default map function which is not optimized for any specific
+;; neighborhood.  All it does is just scan the maximal region in which
+;; the nh is contained and then if a tile is actually valid calls the
+;; func and collects the results.  While this is deterministic, there
+;; is no current requirement about the ordering of the map across the
+;; neighborhood.
+(defun nh-default-map-fn (n func)
+  (let ((results ()))
+    (with-slots (distance) n
+      (loop :for y :from distance :downto (- distance) :do
+         (loop :for x :from (- distance) :to distance :do
+            (let ((tile (nref n x y)))
+              (when tile
+                (push (funcall func tile) results))))))
+    (nreverse results)))
 
-(defmethod nw (s n &optional (distance 1))
-  (nref s n (- distance) distance))
+;; This is how we make a neighborhood.
+(defun make-neighborhood (stage tile make-nh-def-func distance
+                          &key (map-fn #'nh-default-map-fn))
+  (make-instance 'neighborhood
+                 :stage stage
+                 :origin-tile tile
+                 :distance distance
+                 :nh-set-fn (funcall make-nh-def-func distance)
+                 :nh-map-fn map-fn))
 
-(defmethod w (s n &optional (distance 1))
-  (nref s n (- distance) 0))
+(defmethod nref ((n neighborhood) nx ny)
+  ;; First we see if nx/ny is in the defined nh set for this neighborhood
+  (let ((in-nh-set-p (funcall (nh-set-fn n) nx ny)))
+    ;; If so, we keep going and do more work to find it.
+    (when in-nh-set-p
+      ;; Transform the defined nh position into a position on the stage.
+      (multiple-value-bind (sx sy) (change-coord n nx ny)
+        ;; Clip the valid nh location against the stage.
+        (when (valid-tile-p (stage n) sx sy)
+          ;; The NH location resolved to a valid tile on the stage.
+          ;; Return the tile found!
+          (tile (stage n) sx sy))))))
 
-(defmethod sw (s n &optional (distance 1))
-  (nref s n (- distance) (- distance)))
+;; Some accessor methods into a neighborhood.
+(defmethod origin (n)
+  (nref n 0 0))
 
-(defmethod s (s n &optional (distance 1))
-  (nref s n 0 (- distance)))
+(defmethod n (n &optional (distance 1))
+  (nref n 0 distance))
 
-(defmethod se (s n &optional (distance 1))
-  (nref s n distance (- distance)))
+(defmethod nw (n &optional (distance 1))
+  (nref n (- distance) distance))
 
-(defmethod e (s n &optional (distance 1))
-  (nref s n distance 0))
+(defmethod w (n &optional (distance 1))
+  (nref n (- distance) 0))
 
-(defmethod ne (s n &optional (distance 1))
-  (nref s n distance distance))
+(defmethod sw (n &optional (distance 1))
+  (nref n (- distance) (- distance)))
 
-(defun display-neighborhood (s n x-min x-max y-min y-max)
-  (format t "Display: (X: ~A..~A) (Y: ~A..~A)~%" x-min x-max y-min y-max)
-  (loop :for row :to (abs (- y-max y-min))
-        :do (loop :for col :to (abs (- x-max x-min))
-                  :for x = (+ x-min col)
-                  :for y = (- y-max row)
-                  :do (format t "~:[.~;X~]" (nref s n x y)))
-            (format t "~%"))
-  (format t "~%"))
+(defmethod s (n &optional (distance 1))
+  (nref n 0 (- distance)))
 
-(defun neighbor-ortho-test (x y)
-  (format t "Orthogonal neighbor test.~%")
-  (let* ((stage (make-stage 'labyrinth))
-         (nh (neighborhood-ortho stage (tile stage x y) 5)))
-    (format t "Origin: ~S~%(N 5) must be T: ~S~%(NE 1) must be NIL: ~S~%(E 5) must be T: ~S~%"
-            (origin stage nh)
-            (n stage nh 5)
-            (ne stage nh)
-            (e stage nh 5))
-    (display-neighborhood stage nh -10 10 -10 10)))
+(defmethod se (n &optional (distance 1))
+  (nref n distance (- distance)))
 
-(defun neighbor-diag-test (x y)
-  (format t "Diagonal neighborhood test.~%")
-  (let* ((stage (make-stage 'labyrinth))
-         (nh (neighborhood-diag stage (tile stage x y) 5)))
-    (format t "Origin: ~S~%(N 1) must be NIL: ~S~%(NE 5) must be T: ~S~%(E 1) must be NIL: ~S~%"
-            (origin stage nh)
-            (n stage nh)
-            (ne stage nh 5)
-            (e stage nh))
-    (display-neighborhood stage nh -10 10 -10 10)))
+(defmethod e (n &optional (distance 1))
+  (nref n distance 0))
 
-(defun neighbor-circle-test (x y)
-  (format t "Circle neighborhood test.~%")
-  (let* ((stage (make-stage 'labyrinth))
-         (nh (neighborhood-circle stage (tile stage x y) 5)))
-    (format t "Origin: ~S~%(N 5) must be T: ~S~%(NE 5) must be NIL: ~S~%(E 5) must be T: ~S~%"
-            (origin stage nh)
-            (n stage nh 5)
-            (ne stage nh 5)
-            (e stage nh 5))
-    (display-neighborhood stage nh -10 10 -10 10)))
+(defmethod ne (n &optional (distance 1))
+  (nref n distance distance))
 
-(defun neighbor-square-test (x y)
-  (format t "Square neighborhood test.~%")
-  (let* ((stage (make-stage 'labyrinth))
-         (nh (neighborhood-square stage (tile stage x y) 5)))
-    (format t "Origin: ~S~%(N 5) must be T: ~S~%(NE 5) must be T: ~S~%(E 5) must be T: ~S~%"
-            (origin stage nh)
-            (n stage nh 5)
-            (ne stage nh 5)
-            (e stage nh 5))
-    (display-neighborhood stage nh -10 10 -10 10)))
 
-(defun neighbor-tests (x y)
-  (neighbor-ortho-test x y)
-  (neighbor-diag-test x y)
-  (neighbor-circle-test x y)
-  (neighbor-square-test x y))
+;; Initial library of functions that define neighborhood set
+;; definition functions. :) Distance defines a closed square that
+;; contains the nh.
+(defun make-nh-def-ortho (distance)
+  (lambda (nx ny)
+    (and (<= (abs nx) distance)
+         (<= (abs ny) distance)
+         (or (and (zerop nx) (zerop ny))
+             (and (zerop nx) (not (zerop ny)))
+             (and (not (zerop nx)) (zerop ny))))))
+
+(defun make-nh-def-diag (distance)
+  (lambda (nx ny)
+    (and (<= (abs nx) distance)
+         (<= (abs ny) distance)
+         (= (abs nx) (abs ny)))))
+
+(defun make-nh-def-circle (distance)
+  (lambda (nx ny)
+    (<= (+ (* nx nx) (* ny ny))
+        (* distance distance))))
+
+(defun make-nh-def-square (distance)
+  (lambda (nx ny)
+    (and (>= nx (- distance))
+         (>= ny (- distance))
+         (<= nx distance)
+         (<= ny distance))))
+
+
+
+
+
+;; Testing codes.
+
+(defun display-neighborhood (n)
+  (with-slots (distance) n
+    (format t "  NH Display: distance = ~A~%" distance)
+    (loop :for y :from distance :downto (- distance) :do
+       (format t "    ")
+       (loop :for x :from (- distance) :to distance :do
+          (format t "~:[.~;X~]" (nref n x y)))
+       (format t "~%"))))
+
+(defun neighborhood-test-map-nh (n)
+  (format t "  Performing map-nh test...")
+  (let ((sum 0))
+    (map-nh n (lambda (tile)
+                (declare (ignore tile))
+                (incf sum)))
+    (format t "Found ~A tiles!~%" sum)))
+
+;; Around the tile given by x y in this call, make a neighborhood of
+;; distance and then run all the test. check-distance is for checking tiles
+;; at that check-distance in the compas directions. Also perform a map-nh
+;; test of the nh.
+(defun neighbor-tests (x y distance check-distance)
+  (let ((tests `((,#'make-nh-def-ortho "Ortho NH Test")
+                 (,#'make-nh-def-diag "Diag NH Test")
+                 (,#'make-nh-def-circle "Circle NH Test")
+                 (,#'make-nh-def-square "Square NH Test"))))
+    (mapc (lambda (test)
+            (destructuring-bind (nh-func desc) test
+              (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
+                      desc x y distance check-distance)
+              (let* ((stage (make-stage 'labyrinth))
+                     (nh (make-neighborhood
+                          ;; SEE TODO in defclass for neighborhood.
+                          stage (tile stage x y) nh-func distance)))
+                (display-neighborhood nh)
+                (format t "  Origin: ~S~%" (origin nh))
+                (let ((dir-meths `((,#'N "N")
+                                   (,#'NW "NW")
+                                   (,#'W "W")
+                                   (,#'SW "SW")
+                                   (,#'S "S")
+                                   (,#'SE "SE")
+                                   (,#'E "E")
+                                   (,#'NE "NE"))))
+                  (mapc (lambda (spec)
+                          (destructuring-bind (dir-meth dir-desc) spec
+                            (format t "    (~A ~A): ~S~%"
+                                    dir-desc check-distance
+                                    (funcall dir-meth nh check-distance))))
+                        dir-meths))
+                (neighborhood-test-map-fn nh)
+                (format t "~%"))))
+          tests)
+
+    NIL))
