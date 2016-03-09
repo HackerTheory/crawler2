@@ -164,12 +164,15 @@
        (format t "~%"))))
 
 (defun neighborhood-test-map-nh (n)
-  (format t "  Performing map-nh test...")
-  (let ((sum 0))
+  (format t "  Performing map-nh test...~%")
+  (let ((walkablep 0)
+        (non-walkablep 0))
     (map-nh n (lambda (tile)
-                (declare (ignore tile))
-                (incf sum)))
-    (format t "Found ~A tiles!~%" sum)))
+                (if (walkablep tile)
+                    (incf walkablep)
+                    (incf non-walkablep))))
+    (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] tiles.~%"
+            walkablep non-walkablep (+ walkablep non-walkablep))))
 
 ;; Around the tile given by x y in this call, make a neighborhood of
 ;; distance and then run all the test. check-distance is for checking tiles
@@ -205,7 +208,7 @@
                     dir-desc check-distance
                     (funcall dir-meth nh check-distance)))
 
-         (neighborhood-test-map-fn nh))
+         (neighborhood-test-map-nh nh))
 
        (format t "~%"))
 
