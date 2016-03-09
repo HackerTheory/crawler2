@@ -6,14 +6,12 @@
   ((%stage :reader stage
            :initarg :stage)
 
-   ;; The tile around which this neighborhood exists.
-   ;; TODO: However, I actually don't think this needs to be here.
-   ;; Maybe MAKE-NEIGHBORHOOD below should get an x y insted of a TILE
-   ;; and then we don't need to perform ANY tile lookups pre-emptively
-   ;; until we actually need to. Then, neighborhoods are effectively FREE
-   ;; unless you _actually_ look something up in them.
-   (%origin-tile :reader origin-tile
-                 :initarg :origin-tile)
+   ;; The location in stage coordinates of the origin of this neighborhood.
+   (%x :reader x
+       :initarg :x)
+
+   (%y :reader y
+       :initarg :y)
 
    ;; Define a square centered around the origin which must contain the
    ;; whole of the neighborhod function defined by nh-set-fn.
@@ -43,9 +41,8 @@
 ;; clip the coord against valid stage boundaries, so the value you get
 ;; back could be off the stage.
 (defmethod get-stage-coord ((n neighborhood) nx ny)
-  (let ((ot (origin-tile n)))
-    (values (+ (x ot) nx)
-            (+ (y ot) ny))))
+  (values (+ (x n) nx)
+          (+ (y n) ny)))
 
 ;; Call whatever neighborhood map function exists in the neighborhood
 ;; with the supplied func and collects the results into a list, an
@@ -75,11 +72,12 @@
     (nreverse results)))
 
 ;; This is how we make a neighborhood.
-(defun make-neighborhood (stage tile make-nh-def-func distance
+(defun make-neighborhood (stage x y make-nh-def-func distance
                           &key (map-fn #'nh-default-map-fn))
   (make-instance 'neighborhood
                  :stage stage
-                 :origin-tile tile
+                 :x x
+                 :y y
                  :distance distance
                  :nh-set-fn (funcall make-nh-def-func distance)
                  :nh-map-fn map-fn))
@@ -215,7 +213,7 @@
                desc x y distance check-distance)
        (let* ((stage (make-stage 'labyrinth))
               ;; See TODO in neighborhood defclass.
-              (nh (make-neighborhood stage (tile stage x y) nh-func distance)))
+              (nh (make-neighborhood stage x y nh-func distance)))
 
          (display-neighborhood nh)
 
