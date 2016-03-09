@@ -160,7 +160,20 @@
     (loop :for y :from distance :downto (- distance) :do
        (format t "    ")
        (loop :for x :from (- distance) :to distance :do
-          (format t "~:[.~;X~]" (nref n x y)))
+          (format t "~:[-~;X~]" (nref n x y)))
+
+       ;; draw a strip of the actual stage data.
+       ;; also show the real neighborhood in the stage.
+       (format t "    ")
+       (loop :for x :from (- distance) :to distance :do
+          (let ((tile (nref n x y)))
+            (format t "~A"
+                    (cond
+                      ((null tile) " ")
+                      ((walkablep tile) ".")
+                      ((not (walkablep tile)) "#")
+                      (t "?")))))
+
        (format t "~%"))))
 
 (defun neighborhood-test-map-nh (n)
