@@ -189,7 +189,7 @@
                      (,#'E "E")
                      (,#'NE "NE"))))
 
-    (loop :for (nh-func desc) in tests :do
+    (loop :for (nh-func desc) :in tests :do
        (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
                desc x y distance check-distance)
        (let* ((stage (make-stage 'labyrinth))
