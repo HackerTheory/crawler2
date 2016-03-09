@@ -179,33 +179,30 @@
   (let ((tests `((,#'make-nh-def-ortho "Ortho NH Test")
                  (,#'make-nh-def-diag "Diag NH Test")
                  (,#'make-nh-def-circle "Circle NH Test")
-                 (,#'make-nh-def-square "Square NH Test"))))
-    (mapc (lambda (test)
-            (destructuring-bind (nh-func desc) test
-              (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
-                      desc x y distance check-distance)
-              (let* ((stage (make-stage 'labyrinth))
-                     (nh (make-neighborhood
-                          ;; SEE TODO in defclass for neighborhood.
-                          stage (tile stage x y) nh-func distance)))
-                (display-neighborhood nh)
-                (format t "  Origin: ~S~%" (origin nh))
-                (let ((dir-meths `((,#'N "N")
-                                   (,#'NW "NW")
-                                   (,#'W "W")
-                                   (,#'SW "SW")
-                                   (,#'S "S")
-                                   (,#'SE "SE")
-                                   (,#'E "E")
-                                   (,#'NE "NE"))))
-                  (mapc (lambda (spec)
-                          (destructuring-bind (dir-meth dir-desc) spec
-                            (format t "    (~A ~A): ~S~%"
-                                    dir-desc check-distance
-                                    (funcall dir-meth nh check-distance))))
-                        dir-meths))
-                (neighborhood-test-map-fn nh)
-                (format t "~%"))))
-          tests)
+                 (,#'make-nh-def-square "Square NH Test")))
+        (dir-meths `((,#'N "N")
+                     (,#'NW "NW")
+                     (,#'W "W")
+                     (,#'SW "SW")
+                     (,#'S "S")
+                     (,#'SE "SE")
+                     (,#'E "E")
+                     (,#'NE "NE"))))
+
+    (loop :for (nh-func desc) in tests :do
+       (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
+               desc x y distance check-distance)
+       (let* ((stage (make-stage 'labyrinth))
+              (nh (make-neighborhood
+                   ;; SEE TODO in defclass for neighborhood.
+                   stage (tile stage x y) nh-func distance)))
+         (display-neighborhood nh)
+         (format t "  Origin: ~S~%" (origin nh))
+         (loop :for (dir-meth dir-desc) :in dir-meths :do
+            (format t "    (~A ~A): ~S~%"
+                    dir-desc check-distance
+                    (funcall dir-meth nh check-distance)))
+         (neighborhood-test-map-fn nh))
+       (format t "~%"))
 
     NIL))
