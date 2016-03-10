@@ -188,6 +188,42 @@
          (<= nx distance)
          (<= ny distance))))
 
+;; Curried generator forms for neighborhoods. These return functions which
+;; know what kinf of set-fm and map-fn to use in a neighborhood, but still need
+;; to have the stage x y passed to it before it can finish making the
+;; neighborhood structure.
+
+;; a curried form of make-neighborhood to allow easier specification of how
+;; to make a neighborhood. Returns a function that will complete the job later.
+(defun nh-gen (nh-set-fn nh-map-fn distance)
+  (lambda (stage x y)
+    (make-neighborhood stage x y nh-set-fn distance :nh-map-fn nh-map-fn)))
+
+;; a specifc one for generating ortho neighborhoods.
+(defun nh-gen-ortho (distance)
+  (lambda (stage x y)
+    (make-neighborhood
+     stage x y #'nh-def-ortho distance :nh-map-fn #'nh-ortho-map-fn)))
+
+;; a specifc one for generating diag neighborhoods.
+(defun nh-gen-diag (distance)
+  (lambda (stage x y)
+    (make-neighborhood
+     stage x y #'nh-def-diag distance :nh-map-fn #'nh-default-map-fn)))
+
+;; a specifc one for generating circle neighborhoods.
+(defun nh-gen-circle (distance)
+  (lambda (stage x y)
+    (make-neighborhood
+     stage x y #'nh-def-circle distance :nh-map-fn #'nh-default-map-fn)))
+
+;; a specifc one for generating circle neighborhoods.
+(defun nh-gen-square (distance)
+  (lambda (stage x y)
+    (make-neighborhood
+     stage x y #'nh-def-square distance :nh-map-fn #'nh-default-map-fn)))
+
+
 
 
 ;; Testing codes.
