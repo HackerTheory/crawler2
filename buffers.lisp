@@ -3,17 +3,17 @@
 (defmethod make-buffers (stage)
   (with-slots (width height buffers tiles) stage
     (setf tiles (make-array `(,width ,height ,(length buffers))))
-    (dolist (buffer buffers)
-      (dotimes (x width)
-        (dotimes (y height)
-          (make-tile stage x y buffer))))
+    (loop :for buffer :across buffers
+          :do (dotimes (x width)
+                (dotimes (y height)
+                  (make-tile stage x y buffer))))
     tiles))
 
 (defmethod current-buffer (stage)
-  (first (buffers stage)))
+  (aref (buffers stage) 0))
 
 (defmethod next-buffer (stage)
-  (first (rotate (copy-seq (buffers stage)) -1)))
+  (aref (rotate (copy-seq (buffers stage)) -1)) 0)
 
 (defmethod swap-buffers (stage)
   (with-slots (buffers) stage

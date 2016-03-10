@@ -8,7 +8,7 @@
            :initarg :height
            :initform 49)
    (buffers :reader buffers
-            :initform (list 0))
+            :initform (vector 0))
    (tiles :accessor tiles
           :initarg :tiles)))
 
