@@ -2,37 +2,34 @@
 
 ;; all neighborhoods are closed regions of space.
 
-(defclass neighborhood ()
-  ((%stage :reader stage
-           :initarg :stage)
+;; This is a STRUCTURE instead of a CLASS to make faster its allocation in
+;; the CL runtime. This structure is used for convolutions across the stage
+;; and we need to make it as efficient as possible.
+(defstruct (neighborhood
+             (:conc-name NIL)
+             (:constructor make-neighborhood-structure))
+  stage
 
-   ;; The location in stage coordinates of the origin of this neighborhood.
-   (%x :reader x
-       :initarg :x)
+  ;; The location in stage coordinates of the origin of this neighborhood.
+  x
+  y
 
-   (%y :reader y
-       :initarg :y)
+  ;; Define a square centered around the origin which must contain the
+  ;; whole of the neighborhod function defined by nh-set-fn.
+  distance
 
-   ;; Define a square centered around the origin which must contain the
-   ;; whole of the neighborhod function defined by nh-set-fn.
-   (%distance :reader distance
-              :initarg :distance)
+  ;; The function which defines the neighborhood set in terms of the
+  ;; neighborhood coordinate system. It accepts neighborhood coords
+  ;; of nx and ny and return T or NIL if it is in the neighborhood
+  ;; definition set.
+  nh-set-fn
 
-   ;; The function which defines the neighborhood set in terms of the
-   ;; neighborhood coordinate system. It accepts neighborhood coords
-   ;; of nx and ny and return T or NIL if it is in the neighborhood
-   ;; definition set.
-   (%nh-set-fn :reader nh-set-fn
-               :initarg :nh-set-fn)
-
-   ;; The map function which maps a function across the tiles
-   ;; found in the neighborhood (which are also clipped by the stage).
-   ;; Normally, there is a specific optimized function here for the
-   ;; particular neighborhood that was created, but initially it'll have
-   ;; a default one that will always work, just be unoptimized.
-   (%nh-map-fn :reader nh-map-fn
-               :initarg :nh-map-fn))
-
+  ;; The map function which maps a function across the tiles
+  ;; found in the neighborhood (which are also clipped by the stage).
+  ;; Normally, there is a specific optimized function here for the
+  ;; particular neighborhood that was created, but initially it'll have
+  ;; a default one that will always work, just be unoptimized.
+  nh-map-fn
   )
 
 ;; The nh's origin is at a tile and the axis all point the same way,
@@ -40,19 +37,19 @@
 ;; All neighborhood reference frames are identical. This also doesn't
 ;; clip the coord against valid stage boundaries, so the value you get
 ;; back could be off the stage.
-(defmethod get-stage-coord ((n neighborhood) nx ny)
+(defun get-stage-coord (n nx ny)
   (values (+ (x n) nx)
           (+ (y n) ny)))
 
 ;; Call whatever neighborhood map function exists in the neighborhood
 ;; with the supplied func and collects the results into a list, an
 ;; returns it.
-(defmethod map-nh ((n neighborhood) func)
+(defun map-nh (n func)
   (funcall (nh-map-fn n) n func))
 
 ;; Determine if nx/ny considered in the set defined by the nh-set-fn.
 ;; This does no clipping to the stage.
-(defmethod in-set-p ((n neighborhood) nx ny)
+(defun in-set-p (n nx ny)
   (funcall (nh-set-fn n) nx ny))
 
 ;; The default map function which is not optimized for any specific
@@ -75,15 +72,14 @@
 (defun make-neighborhood (stage x y make-nh-def-func distance
                           &key (map-fn #'nh-default-map-fn))
   (let ((set-fn (funcall make-nh-def-func distance)))
-    (make-instance 'neighborhood
-                   :stage stage
-                   :x x
-                   :y y
-                   :distance distance
-                   :nh-set-fn set-fn
-                   :nh-map-fn map-fn)))
+    (make-neighborhood-structure :stage stage
+                                 :x x
+                                 :y y
+                                 :distance distance
+                                 :nh-set-fn set-fn
+                                 :nh-map-fn map-fn)))
 
-(defmethod nref ((n neighborhood) nx ny)
+(defun nref (n nx ny)
   ;; If nx/ny is in the NH set, keep going.
   (when (in-set-p n nx ny)
     ;; Transform the defined nh position into a position on the stage.
@@ -95,31 +91,31 @@
         (tile (stage n) sx sy)))))
 
 ;; Some accessor methods into a neighborhood.
-(defmethod origin (n)
+(defun origin (n)
   (nref n 0 0))
 
-(defmethod n (n &optional (distance 1))
+(defun n (n &optional (distance 1))
   (nref n 0 distance))
 
-(defmethod nw (n &optional (distance 1))
+(defun nw (n &optional (distance 1))
   (nref n (- distance) distance))
 
-(defmethod w (n &optional (distance 1))
+(defun w (n &optional (distance 1))
   (nref n (- distance) 0))
 
-(defmethod sw (n &optional (distance 1))
+(defun sw (n &optional (distance 1))
   (nref n (- distance) (- distance)))
 
-(defmethod s (n &optional (distance 1))
+(defun s (n &optional (distance 1))
   (nref n 0 (- distance)))
 
-(defmethod se (n &optional (distance 1))
+(defun se (n &optional (distance 1))
   (nref n distance (- distance)))
 
-(defmethod e (n &optional (distance 1))
+(defun e (n &optional (distance 1))
   (nref n distance 0))
 
-(defmethod ne (n &optional (distance 1))
+(defun ne (n &optional (distance 1))
   (nref n distance distance))
 
 
