@@ -74,13 +74,14 @@
 ;; This is how we make a neighborhood.
 (defun make-neighborhood (stage x y make-nh-def-func distance
                           &key (map-fn #'nh-default-map-fn))
-  (make-instance 'neighborhood
-                 :stage stage
-                 :x x
-                 :y y
-                 :distance distance
-                 :nh-set-fn (funcall make-nh-def-func distance)
-                 :nh-map-fn map-fn))
+  (let ((set-fn (funcall make-nh-def-func distance)))
+    (make-instance 'neighborhood
+                   :stage stage
+                   :x x
+                   :y y
+                   :distance distance
+                   :nh-set-fn set-fn
+                   :nh-map-fn map-fn)))
 
 (defmethod nref ((n neighborhood) nx ny)
   ;; If nx/ny is in the NH set, keep going.
@@ -206,13 +207,13 @@
                      (,#'S "S")
                      (,#'SE "SE")
                      (,#'E "E")
-                     (,#'NE "NE"))))
+                     (,#'NE "NE")))
+        (stage (make-stage 'labyrinth)))
 
     (loop :for (nh-func desc) :in tests :do
        (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
                desc x y distance check-distance)
-       (let* ((stage (make-stage 'labyrinth))
-              ;; See TODO in neighborhood defclass.
+       (let* (;; See TODO in neighborhood defclass.
               (nh (make-neighborhood stage x y nh-func distance)))
 
          (display-neighborhood nh)
