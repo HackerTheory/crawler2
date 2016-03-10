@@ -227,11 +227,17 @@
                         (incf walkablep)
                         (incf non-walkablep))))
       (declare (ignore results))
+      (let* ((potential-examined (expt (1+ (* (distance n) 2)) 2))
+             (examined-savings-per (- 1.0 (/ num-examined potential-examined))))
 
-      (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] tiles.~%"
-              walkablep non-walkablep (+ walkablep non-walkablep))
+        (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] tiles.~%"
+                walkablep non-walkablep (+ walkablep non-walkablep))
 
-      (format t "    Tiles examined during nh-map: ~A~%" num-examined))))
+        (format t "    Tiles actually examined during nh-map: ~A~%"
+                num-examined)
+        (format t "    Default nh-map function examination: ~A~%"
+                potential-examined)
+        (format t "    Savings: ~,2F%~%" (* examined-savings-per 100.0))))))
 
 ;; Around the tile given by x y in this call, make a neighborhood of
 ;; distance and then run all the test. check-distance is for checking tiles
