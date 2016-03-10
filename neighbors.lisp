@@ -44,13 +44,13 @@
 ;; Call whatever neighborhood map function exists in the neighborhood
 ;; with the supplied func and collects the results into a list, an
 ;; returns it.
-(defun map-nh (n func)
+(defun nh-map (n func)
   (funcall (nh-map-fn n) n func))
 
 ;; Determine if nx/ny considered in the set defined by the nh-set-fn.
 ;; This does no clipping to the stage.
 (defun in-set-p (n nx ny)
-  (funcall (nh-set-fn n) nx ny))
+  (funcall (nh-set-fn n) n nx ny))
 
 ;; The default map function which is not optimized for any specific
 ;; neighborhood.  All it does is just scan the maximal region in which
@@ -58,26 +58,29 @@
 ;; func and collects the results.  While this is deterministic, there
 ;; is no current requirement about the ordering of the map across the
 ;; neighborhood.
+;; Return two values, the results of the mapping, and how many tiles were
+;; examined to create the map.
 (defun nh-default-map-fn (n func)
-  (let ((results ()))
+  (let ((results ())
+        (num-examined 0))
     (with-accessors ((distance distance)) n
       (loop :for y :from distance :downto (- distance) :do
          (loop :for x :from (- distance) :to distance :do
             (let ((tile (nref n x y)))
+              (incf num-examined)
               (when tile
                 (push (funcall func tile) results))))))
-    (nreverse results)))
+    (values (nreverse results) num-examined)))
 
 ;; This is how we make a neighborhood.
-(defun make-neighborhood (stage x y make-nh-def-func distance
-                          &key (map-fn #'nh-default-map-fn))
-  (let ((set-fn (funcall make-nh-def-func distance)))
-    (make-neighborhood-structure :stage stage
-                                 :x x
-                                 :y y
-                                 :distance distance
-                                 :nh-set-fn set-fn
-                                 :nh-map-fn map-fn)))
+(defun make-neighborhood (stage x y nh-def-func distance
+                          &key (nh-map-fn #'nh-default-map-fn))
+  (make-neighborhood-structure :stage stage
+                               :x x
+                               :y y
+                               :distance distance
+                               :nh-set-fn nh-def-func
+                               :nh-map-fn nh-map-fn))
 
 (defun nref (n nx ny)
   ;; If nx/ny is in the NH set, keep going.
@@ -119,36 +122,71 @@
   (nref n distance distance))
 
 
-;; Initial library of functions that define neighborhood set
-;; definition functions. :) Distance defines a closed square that
-;; contains the nh.
-(defun make-nh-def-ortho (distance)
-  (lambda (nx ny)
+;; Initial library of neighborhood functions that mathematically
+;; define neighborhood set membership. Return T is in the neighorhood and
+;; NIL if not.
+
+;; Define an ortho neighborhood.
+(defun nh-def-ortho (n nx ny)
+  (let ((distance (distance n)))
     (and (<= (abs nx) distance)
          (<= (abs ny) distance)
          (or (and (zerop nx) (zerop ny))
              (and (zerop nx) (not (zerop ny)))
              (and (not (zerop nx)) (zerop ny))))))
 
-(defun make-nh-def-diag (distance)
-  (lambda (nx ny)
+;; Implement a specialized nh-map function for ortho neighborhoods which will
+;; reduce how many tiles are examined.
+(defun nh-ortho-map-fn (n func)
+  (let ((results ())
+        (num-examined 0)
+        (distance (distance n)))
+
+    ;; compute vertical line results, include the origin
+    (loop :for y :from (- distance) :to distance :do
+       (let ((tile (nref n 0 y)))
+         (incf num-examined)
+         (when tile
+           (push (funcall func tile) results))))
+
+    ;; Then compute the left side of the horiz line, skipping the origin
+    (loop :for x :from (- distance) :below 0 :do
+       (let ((tile (nref n x 0)))
+         (incf num-examined)
+         (when tile
+           (push (funcall func tile) results))))
+
+    ;; Then compute the right side of the horz line, skipping the origin
+    (loop :for x :from 1 :to distance :do
+       (let ((tile (nref n x 0)))
+         (incf num-examined)
+         (when tile
+           (push (funcall func tile) results))))
+
+    ;; and finally return everything
+    (values (nreverse results) num-examined)))
+
+
+;; Define a diagonal neighborhood
+(defun nh-def-diag (n nx ny)
+  (let ((distance (distance n)))
     (and (<= (abs nx) distance)
          (<= (abs ny) distance)
          (= (abs nx) (abs ny)))))
 
-(defun make-nh-def-circle (distance)
-  (lambda (nx ny)
+;; Define a circular neighborhood
+(defun nh-def-circle (n nx ny)
+  (let ((distance (distance n)))
     (<= (+ (* nx nx) (* ny ny))
         (* distance distance))))
 
-(defun make-nh-def-square (distance)
-  (lambda (nx ny)
+;; Define a square neighborhood
+(defun nh-def-square (n nx ny)
+  (let ((distance (distance n)))
     (and (>= nx (- distance))
          (>= ny (- distance))
          (<= nx distance)
          (<= ny distance))))
-
-
 
 
 
@@ -176,26 +214,34 @@
 
        (format t "~%"))))
 
-(defun neighborhood-test-map-nh (n)
-  (format t "  Performing map-nh test...~%")
+(defun neighborhood-test-nh-map (n)
+  (format t "  Performing nh-map test...~%")
   (let ((walkablep 0)
         (non-walkablep 0))
-    (map-nh n (lambda (tile)
-                (if (walkablep tile)
-                    (incf walkablep)
-                    (incf non-walkablep))))
-    (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] tiles.~%"
-            walkablep non-walkablep (+ walkablep non-walkablep))))
+    ;; we ignore results, since we side effect in the mapped function.
+    ;; We record num-examined, which is how many tiles were looked at in
+    ;; the neighborhood to determine membership.
+    (multiple-value-bind (results num-examined)
+        (nh-map n (lambda (tile)
+                    (if (walkablep tile)
+                        (incf walkablep)
+                        (incf non-walkablep))))
+      (declare (ignore results))
+
+      (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] tiles.~%"
+              walkablep non-walkablep (+ walkablep non-walkablep))
+
+      (format t "    Tiles examined during nh-map: ~A~%" num-examined))))
 
 ;; Around the tile given by x y in this call, make a neighborhood of
 ;; distance and then run all the test. check-distance is for checking tiles
 ;; at that check-distance in the compas directions. Also perform a map-nh
 ;; test of the nh.
 (defun neighbor-tests (x y distance check-distance)
-  (let ((tests `((,#'make-nh-def-ortho "Ortho NH Test")
-                 (,#'make-nh-def-diag "Diag NH Test")
-                 (,#'make-nh-def-circle "Circle NH Test")
-                 (,#'make-nh-def-square "Square NH Test")))
+  (let ((tests `((,#'nh-def-ortho ,#'nh-ortho-map-fn "Ortho NH Test")
+                 (,#'nh-def-diag ,#'nh-default-map-fn "Diag NH Test")
+                 (,#'nh-def-circle ,#'nh-default-map-fn "Circle NH Test")
+                 (,#'nh-def-square ,#'nh-default-map-fn "Square NH Test")))
         (dir-meths `((,#'N "N")
                      (,#'NW "NW")
                      (,#'W "W")
@@ -206,11 +252,13 @@
                      (,#'NE "NE")))
         (stage (make-stage 'labyrinth)))
 
-    (loop :for (nh-func desc) :in tests :do
+    (loop :for (nh-func nh-map-fn desc) :in tests :do
        (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
                desc x y distance check-distance)
-       (let* (;; See TODO in neighborhood defclass.
-              (nh (make-neighborhood stage x y nh-func distance)))
+       (let* (;; TODO, make nh-func a keyword arg of :nh-def and set it to
+              ;; square, same with the mh-map-fn.
+              (nh (make-neighborhood stage x y nh-func distance
+                                     :nh-map-fn nh-map-fn)))
 
          (display-neighborhood nh)
 
@@ -221,7 +269,7 @@
                     dir-desc check-distance
                     (funcall dir-meth nh check-distance)))
 
-         (neighborhood-test-map-nh nh))
+         (neighborhood-test-nh-map nh))
 
        (format t "~%"))
 
