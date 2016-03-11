@@ -69,11 +69,14 @@
 ;; of a neighborhood where you can control the thickness of the line and
 ;; such, we'll need more slots in this structure.
 (defstruct ext
-  ;; MAX-DISTANCE should ALWAYS be defined since it represents the farthest
-  ;; distance from the origin which still contains the neighborhood. This is
-  ;; used to define a symmetric square around the neighborhood that MUST
-  ;; enclose it completely.
-  max-distance
+  ;; MAX-DISTANCE should ALWAYS be defined since it represents the
+  ;; farthest distance from the origin which still contains the
+  ;; neighborhood. This is used to define a symmetric square around
+  ;; the neighborhood that MUST enclose it completely. So, if you're
+  ;; looking for a large neighborhood, you better set this big enough
+  ;; to contain it.  We set a default which is probably the common one
+  ;; people actually want.
+  (max-distance 1)
   )
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,8 +95,8 @@
   y
 
   ;; Describe various properties about where the set-fn is valid.
-  ;; We initially define a 1 unit square which includes the origin.
-  (ext (make-ext :max-distance 1))
+  ;; We initially define defalt max-distance square which includes the origin.
+  (ext (make-ext))
 
   ;; Function that mathematically describes the set. Returns T if coord is
   ;; a member of the set, NIL otherwise.
