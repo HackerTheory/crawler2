@@ -20,8 +20,8 @@
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
     (and (not (minusp x))
-         (< x width)
          (not (minusp y))
+         (< x width)
          (< y height))))
 
 (defmethod build (stage))
