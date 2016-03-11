@@ -11,7 +11,7 @@
   ((:file "package")
    (:file "random")
    (:file "buffers")
-   (:file "tile")
+   (:file "cells")
    (:file "neighbors")
    (:file "stage")
    (:module "labyrinth"

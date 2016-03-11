@@ -43,9 +43,9 @@
     (loop :with region = (make-region stage)
           :for x :from x1 :below x2
           :do (loop :for y :from y1 :below y2
-                    :for tile = (tile stage x y)
-                    :do (setf (walkablep tile) t
-                              (region tile) region))))
+                    :for cell = (cell stage x y)
+                    :do (setf (walkablep cell) t
+                              (region cell) region))))
   (push room (rooms stage)))
 
 (defmethod make-room ((stage labyrinth))

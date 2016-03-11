@@ -1,8 +1,8 @@
 (in-package :crawler2-examples)
 
 (defsketch example-labyrinth (:title "Example Labyrinth"
-                              :width (* *tile-size* (width *stage*))
-                              :height (* *tile-size* (height *stage*))
+                              :width (* *cell-size* (width *stage*))
+                              :height (* *cell-size* (height *stage*))
                               :y-axis :up
                               :debug :scancode-grave)
     ()

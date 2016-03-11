@@ -2,27 +2,27 @@
 
 (defvar *stage* nil)
 (defvar *attrs* nil)
-(defvar *tile-size* 8)
+(defvar *cell-size* 8)
 
 (defmethod draw ()
   (with-slots (width height) *stage*
     (background (gray 0.2))
     (dotimes (x width)
       (dotimes (y height)
-        (draw-tile x y)))
+        (draw-cell x y)))
     (sleep 1)))
 
-(defmethod draw-tile (x y)
+(defmethod draw-cell (x y)
   (with-pen (make-pen :fill (select-color x y))
-    (rect (* x *tile-size*)
-          (* y *tile-size*)
-          (1- *tile-size*)
-          (1- *tile-size*))))
+    (rect (* x *cell-size*)
+          (* y *cell-size*)
+          (1- *cell-size*)
+          (1- *cell-size*))))
 
 (defmethod select-color (x y)
-  (let ((tile (tile *stage* x y)))
+  (let ((cell (cell *stage* x y)))
     (cond
-      ((walkablep tile) (gray 1)))))
+      ((walkablep cell) (gray 1)))))
 
 (defmethod mousebutton-event :after (window state ts button x y)
   (when (and (eq state :MOUSEBUTTONUP)

@@ -9,8 +9,8 @@
            #:make-stage
            #:width
            #:height
-           #:tiles
-           #:tile
+           #:grid
+           #:cell
            #:walkablep))
 
 (in-package :crawler2)

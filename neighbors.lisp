@@ -24,7 +24,7 @@
   ;; definition set.
   nh-set-fn
 
-  ;; The map function which maps a function across the tiles
+  ;; The map function which maps a function across the cells
   ;; found in the neighborhood (which are also clipped by the stage).
   ;; Normally, there is a specific optimized function here for the
   ;; particular neighborhood that was created, but initially it'll have
@@ -32,7 +32,7 @@
   nh-map-fn
   )
 
-;; The nh's origin is at a tile and the axis all point the same way,
+;; The nh's origin is at a cell and the axis all point the same way,
 ;; so it is an easy offset to convert nh coords into stage coords.
 ;; All neighborhood reference frames are identical. This also doesn't
 ;; clip the coord against valid stage boundaries, so the value you get
@@ -54,11 +54,11 @@
 
 ;; The default map function which is not optimized for any specific
 ;; neighborhood.  All it does is just scan the maximal region in which
-;; the nh is contained and then if a tile is actually valid calls the
+;; the nh is contained and then if a cell is actually valid calls the
 ;; func and collects the results.  While this is deterministic, there
 ;; is no current requirement about the ordering of the map across the
 ;; neighborhood.
-;; Return two values, the results of the mapping, and how many tiles were
+;; Return two values, the results of the mapping, and how many cells were
 ;; examined to create the map.
 (defun nh-default-map-fn (n func)
   (let ((results ())
@@ -66,10 +66,10 @@
     (with-accessors ((distance distance)) n
       (loop :for y :from distance :downto (- distance) :do
          (loop :for x :from (- distance) :to distance :do
-            (let ((tile (nref n x y)))
+            (let ((cell (nref n x y)))
               (incf num-examined)
-              (when tile
-                (push (funcall func tile) results))))))
+              (when cell
+                (push (funcall func cell) results))))))
     (values (nreverse results) num-examined)))
 
 ;; This is how we make a neighborhood.
@@ -88,10 +88,10 @@
     ;; Transform the defined nh position into a position on the stage.
     (multiple-value-bind (sx sy) (get-stage-coord n nx ny)
       ;; Clip the valid nh location against the stage.
-      (when (valid-tile-p (stage n) sx sy)
-        ;; The NH location resolved to a valid tile on the stage.
-        ;; Return the tile found!
-        (tile (stage n) sx sy)))))
+      (when (valid-cell-p (stage n) sx sy)
+        ;; The NH location resolved to a valid cell on the stage.
+        ;; Return the cell found!
+        (cell (stage n) sx sy)))))
 
 ;; Some accessor methods into a neighborhood.
 (defun origin (n)
@@ -136,7 +136,7 @@
              (and (not (zerop nx)) (zerop ny))))))
 
 ;; Implement a specialized nh-map function for ortho neighborhoods which will
-;; reduce how many tiles are examined.
+;; reduce how many cells are examined.
 (defun nh-ortho-map-fn (n func)
   (let ((results ())
         (num-examined 0)
@@ -144,24 +144,24 @@
 
     ;; compute vertical line results, include the origin
     (loop :for y :from (- distance) :to distance :do
-       (let ((tile (nref n 0 y)))
+       (let ((cell (nref n 0 y)))
          (incf num-examined)
-         (when tile
-           (push (funcall func tile) results))))
+         (when cell
+           (push (funcall func cell) results))))
 
     ;; Then compute the left side of the horiz line, skipping the origin
     (loop :for x :from (- distance) :below 0 :do
-       (let ((tile (nref n x 0)))
+       (let ((cell (nref n x 0)))
          (incf num-examined)
-         (when tile
-           (push (funcall func tile) results))))
+         (when cell
+           (push (funcall func cell) results))))
 
     ;; Then compute the right side of the horz line, skipping the origin
     (loop :for x :from 1 :to distance :do
-       (let ((tile (nref n x 0)))
+       (let ((cell (nref n x 0)))
          (incf num-examined)
-         (when tile
-           (push (funcall func tile) results))))
+         (when cell
+           (push (funcall func cell) results))))
 
     ;; and finally return everything
     (values (nreverse results) num-examined)))
@@ -240,12 +240,12 @@
        ;; also show the real neighborhood in the stage.
        (format t "    ")
        (loop :for x :from (- distance) :to distance :do
-          (let ((tile (nref n x y)))
+          (let ((cell (nref n x y)))
             (format t "~A"
                     (cond
-                      ((null tile) " ")
-                      ((walkablep tile) ".")
-                      ((not (walkablep tile)) "#")
+                      ((null cell) " ")
+                      ((walkablep cell) ".")
+                      ((not (walkablep cell)) "#")
                       (t "?")))))
 
        (format t "~%"))))
@@ -255,28 +255,28 @@
   (let ((walkablep 0)
         (non-walkablep 0))
     ;; we ignore results, since we side effect in the mapped function.
-    ;; We record num-examined, which is how many tiles were looked at in
+    ;; We record num-examined, which is how many cells were looked at in
     ;; the neighborhood to determine membership.
     (multiple-value-bind (results num-examined)
-        (nh-map n (lambda (tile)
-                    (if (walkablep tile)
+        (nh-map n (lambda (cell)
+                    (if (walkablep cell)
                         (incf walkablep)
                         (incf non-walkablep))))
       (declare (ignore results))
       (let* ((potential-examined (expt (1+ (* (distance n) 2)) 2))
              (examined-savings-per (- 1.0 (/ num-examined potential-examined))))
 
-        (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] tiles.~%"
+        (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] cells.~%"
                 walkablep non-walkablep (+ walkablep non-walkablep))
 
-        (format t "    Tiles actually examined during nh-map: ~A~%"
+        (format t "    Cells actually examined during nh-map: ~A~%"
                 num-examined)
         (format t "    Default nh-map function examination: ~A~%"
                 potential-examined)
         (format t "    Savings: ~,2F%~%" (* examined-savings-per 100.0))))))
 
-;; Around the tile given by x y in this call, make a neighborhood of
-;; distance and then run all the test. check-distance is for checking tiles
+;; Around the cell given by x y in this call, make a neighborhood of
+;; distance and then run all the test. check-distance is for checking cells
 ;; at that check-distance in the compas directions. Also perform a map-nh
 ;; test of the nh.
 (defun neighbor-tests (x y distance check-distance)

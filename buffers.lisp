@@ -1,13 +1,13 @@
 (in-package :crawler2)
 
 (defmethod make-buffers (stage)
-  (with-slots (width height buffers tiles) stage
-    (setf tiles (make-array `(,width ,height ,(length buffers))))
+  (with-slots (width height buffers grid) stage
+    (setf grid (make-array `(,width ,height ,(length buffers))))
     (loop :for buffer :across buffers
           :do (dotimes (x width)
                 (dotimes (y height)
-                  (make-tile stage x y buffer))))
-    tiles))
+                  (make-cell stage x y buffer))))
+    grid))
 
 (defmethod current-buffer (stage)
   (aref (buffers stage) 0))
