@@ -10,6 +10,14 @@
     (print-unreadable-object (o stream)
       (format stream "X:~S, Y:~S" x y walkablep region))))
 
+(defmethod valid-cell-p (stage x y)
+  (with-slots (height width) stage
+    (when (and (not (minusp x))
+               (not (minusp y))
+               (< x width)
+               (< y height))
+      (cell stage x y))))
+
 (defmethod cell (stage x y &key buffer)
   (let ((z (or buffer (current-buffer stage))))
     (aref (grid stage) x y z)))

@@ -17,13 +17,6 @@
     (setf width (max 10 width)
           height (max 10 height))))
 
-(defmethod valid-cell-p (stage x y)
-  (with-slots (height width) stage
-    (and (not (minusp x))
-         (not (minusp y))
-         (< x width)
-         (< y height))))
-
 (defmethod build (stage))
 
 (defmethod make-stage (stage-type &rest attrs)
