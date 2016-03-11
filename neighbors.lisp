@@ -1,246 +1,414 @@
 (in-package :crawler2)
 
-;; all neighborhoods are closed regions of space.
+;;;; Neighborhoods are mathematical objects which represent a finite
+;;;; and closed area of cells around a particular point on the
+;;;; stage. The neighborhood exists in its own coordinate space and
+;;;; the origin of the neighborhood coordinate system is at the (x0,
+;;;; x1, ..., xN) location of the cell on the stage. The axes of the
+;;;; neighborhood align in direction with the stage coordinate system.
+;;;;
+;;;; There is a function, called a NH-SET-FN function, which defines
+;;;; an equation which indicates set membership in the
+;;;; neighborhood. Another function, called a NH-MAP-FN function, maps
+;;;; an arbitrary function across the cells which are a member of the
+;;;; neighborhood as defined by the NH-SET-FN function.  The NH-SET-FN
+;;;; function can define things like squares, circles, polygons,
+;;;; curves, outlines of squares, or any other set of cells that are
+;;;; considered the neighborhood. The order of mapping that an NH-MAP-FN
+;;;; function performs is not defined.
+;;;;
+;;;; Since neighborhoods may be defined to be larger than the
+;;;; boundaries of the stage (example: a 7x7 square neighborhood at
+;;;; stage location 2,2), the neighborhoods are clipped in terms of
+;;;; NH-REF. If you are manually converting neighborhood coordinates to
+;;;; stage coordinates, don't forget to pass those stage coordinates
+;;;; through VALID-CELL-P to ensure that you will be accessing a valid
+;;;; cell on the stage.
+;;;;
+;;;; Extents are structures which help define the neighborhood
+;;;; regions.  you must ALWAYS initialize MAX-DISTANCE when creating
+;;;; an EXTENT because that represents the full size of the square
+;;;; centered at the origin of the neighborhood which must contain the
+;;;; entire neighborhood set. Extents are sort of a hodgepodge of
+;;;; information used by different NH-SET-FN and NH-MAP-FN functions
+;;;; to define the valid region that NH-SET-FN considers to be in the
+;;;; neighborhood.
+;;;;
+;;;; A set of helper functions allow curried building of
+;;;; neighborhoods. These are the NH-GEN functions. These return a
+;;;; function which when invoked with the rest of the data needed
+;;;; complete the construction of a neighborhood. They are useful in
+;;;; situations when you want to describe the properties of a
+;;;; neighborhood but not, at that point in the code, want to declare
+;;;; exactly where it is on which stage.
+;;;;
+;;;; There are specific accessors for well known places on the
+;;;; neighborhood such as NH-ORIGIN, NH-N, NH-NW, NH-W, NH-SW, NH-S,
+;;;; NH-SE, NH-E, NH-NE.  They may be passed distances to offset the
+;;;; cell looked up in that direction. NH-REF is a general accessor
+;;;; which will look up a cell in the neighborhood's coordinate system
+;;;; and return NIL if there is no cell there (due to clipping or that
+;;;; location not being in the NH-SET-FN membership) or the cell
+;;;; refernce otherwise.  NOTE: Neighborhoods only perform their work
+;;;; when NH-REF is called on it.  Hence, no cell lookups are performed
+;;;; through the neighborhood API on the stage unless NH-REF is called.
+;;;;
+;;;; Neighborhood are created with MAKE-NH as per the structure slot
+;;;; initializers. :stage, :x, and :y are the minimum number of init
+;;;; args one needs and the SET-FN will result in a square neighorhood 1
+;;;; unit around the origin and including the origin.
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The EXTENT structure.
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A union of various ways to specify ranges, how big something is,
+;; bounds on things, thicknesses of lines, context of such, etc, etc,
+;; etc. Used by the neighborhood code for various nh-sets. Currently
+;; only max-distance is in here, but as soon as we want a sqaure outline
+;; of a neighborhood where you can control the thickness of the line and
+;; such, we'll need more slots in this structure.
+(defstruct ext
+  ;; MAX-DISTANCE should ALWAYS be defined since it represents the
+  ;; farthest distance from the origin which still contains the
+  ;; neighborhood. This is used to define a symmetric square around
+  ;; the neighborhood that MUST enclose it completely. So, if you're
+  ;; looking for a large neighborhood, you better set this big enough
+  ;; to contain it.  We set a default which is probably the common one
+  ;; people actually want.
+  (max-distance 1)
+  )
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The NH structure.
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This is a STRUCTURE instead of a CLASS to make faster its allocation in
 ;; the CL runtime. This structure is used for convolutions across the stage
 ;; and we need to make it as efficient as possible.
-(defstruct (neighborhood
-             (:conc-name NIL)
-             (:constructor make-neighborhood-structure))
+(defstruct nh
+  ;; For what stage was this neighborhood created?
   stage
 
   ;; The location in stage coordinates of the origin of this neighborhood.
   x
   y
 
-  ;; Define a square centered around the origin which must contain the
-  ;; whole of the neighborhod function defined by nh-set-fn.
-  distance
+  ;; Describe various properties about where the set-fn is valid.
+  ;; We initially define defalt max-distance square which includes the origin.
+  (ext (make-ext))
 
-  ;; The function which defines the neighborhood set in terms of the
-  ;; neighborhood coordinate system. It accepts neighborhood coords
-  ;; of nx and ny and return T or NIL if it is in the neighborhood
-  ;; definition set.
-  nh-set-fn
+  ;; Function that mathematically describes the set. Returns T if coord is
+  ;; a member of the set, NIL otherwise.
+  (set-fn #'nh-set-fn-default)
 
-  ;; The map function which maps a function across the cells
-  ;; found in the neighborhood (which are also clipped by the stage).
-  ;; Normally, there is a specific optimized function here for the
-  ;; particular neighborhood that was created, but initially it'll have
-  ;; a default one that will always work, just be unoptimized.
-  nh-map-fn
+  ;; Function that will map another function across the cells which are in
+  ;; the neighborhood and actually on the stage.
+  (map-fn #'nh-map-fn-default)
   )
 
-;; The nh's origin is at a cell and the axis all point the same way,
-;; so it is an easy offset to convert nh coords into stage coords.
-;; All neighborhood reference frames are identical. This also doesn't
-;; clip the coord against valid stage boundaries, so the value you get
-;; back could be off the stage.
-(defun get-stage-coord (n nx ny)
-  (values (+ (x n) nx)
-          (+ (y n) ny)))
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Neighborhood API methods
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Call whatever neighborhood map function exists in the neighborhood
-;; with the supplied func and collects the results into a list, an
-;; returns it.
+;; Convert an NH coordinate to the stage coordinate system, but do no
+;; clipping to the stage boundaries.
+(defun nh-to-stage-coord (n nx ny)
+  (values (+ (nh-x n) nx)
+          (+ (nh-y n) ny)))
+
+;; A nicer interface to mapping a function across the valid cells in a
+;; neighborhood.
 (defun nh-map (n func)
   (funcall (nh-map-fn n) n func))
 
 ;; Determine if nx/ny considered in the set defined by the nh-set-fn.
 ;; This does no clipping to the stage.
-(defun in-set-p (n nx ny)
+(defun nh-in-set-p (n nx ny)
   (funcall (nh-set-fn n) n nx ny))
 
-;; The default map function which is not optimized for any specific
-;; neighborhood.  All it does is just scan the maximal region in which
-;; the nh is contained and then if a cell is actually valid calls the
-;; func and collects the results.  While this is deterministic, there
-;; is no current requirement about the ordering of the map across the
-;; neighborhood.
-;; Return two values, the results of the mapping, and how many cells were
-;; examined to create the map.
-(defun nh-default-map-fn (n func)
-  (let ((results ())
-        (num-examined 0))
-    (with-accessors ((distance distance)) n
-      (loop :for y :from distance :downto (- distance) :do
-         (loop :for x :from (- distance) :to distance :do
-            (let ((cell (nref n x y)))
-              (incf num-examined)
-              (when cell
-                (push (funcall func cell) results))))))
-    (values (nreverse results) num-examined)))
-
-;; This is how we make a neighborhood.
-(defun make-neighborhood (stage x y nh-def-func distance
-                          &key (nh-map-fn #'nh-default-map-fn))
-  (make-neighborhood-structure :stage stage
-                               :x x
-                               :y y
-                               :distance distance
-                               :nh-set-fn nh-def-func
-                               :nh-map-fn nh-map-fn))
-
-(defun nref (n nx ny)
+;; The neighborhood reference function, similar to aref. Returns NIL if
+;; the neghborhood coordinate results in a position which is not defined to
+;; be in the set or is off the stage. Return a cell reference if NX and NY
+;; are both in the defined set of the neighborhood and on the stage.
+(defun nh-ref (n nx ny)
   ;; If nx/ny is in the NH set, keep going.
-  (when (in-set-p n nx ny)
+  (when (nh-in-set-p n nx ny)
     ;; Transform the defined nh position into a position on the stage.
-    (multiple-value-bind (sx sy) (get-stage-coord n nx ny)
+    (multiple-value-bind (sx sy) (nh-to-stage-coord n nx ny)
       ;; Clip the valid nh location against the stage.
-      (when (valid-cell-p (stage n) sx sy)
+      (when (valid-cell-p (nh-stage n) sx sy)
         ;; The NH location resolved to a valid cell on the stage.
         ;; Return the cell found!
-        (cell (stage n) sx sy)))))
+        (cell (nh-stage n) sx sy)))))
 
-;; Some accessor methods into a neighborhood.
-(defun origin (n)
-  (nref n 0 0))
+;; A pile of well named places to inspect in the neighborhood.
 
-(defun n (n &optional (distance 1))
-  (nref n 0 distance))
+(defun nh-origin (n)
+  (nh-ref n 0 0))
 
-(defun nw (n &optional (distance 1))
-  (nref n (- distance) distance))
+(defun nh-n (n &optional (distance 1))
+  (nh-ref n 0 distance))
 
-(defun w (n &optional (distance 1))
-  (nref n (- distance) 0))
+(defun nh-nw (n &optional (distance 1))
+  (nh-ref n (- distance) distance))
 
-(defun sw (n &optional (distance 1))
-  (nref n (- distance) (- distance)))
+(defun nh-w (n &optional (distance 1))
+  (nh-ref n (- distance) 0))
 
-(defun s (n &optional (distance 1))
-  (nref n 0 (- distance)))
+(defun nh-sw (n &optional (distance 1))
+  (nh-ref n (- distance) (- distance)))
 
-(defun se (n &optional (distance 1))
-  (nref n distance (- distance)))
+(defun nh-s (n &optional (distance 1))
+  (nh-ref n 0 (- distance)))
 
-(defun e (n &optional (distance 1))
-  (nref n distance 0))
+(defun nh-se (n &optional (distance 1))
+  (nh-ref n distance (- distance)))
 
-(defun ne (n &optional (distance 1))
-  (nref n distance distance))
+(defun nh-e (n &optional (distance 1))
+  (nh-ref n distance 0))
 
+(defun nh-ne (n &optional (distance 1))
+  (nh-ref n distance distance))
 
-;; Initial library of neighborhood functions that mathematically
-;; define neighborhood set membership. Return T is in the neighorhood and
-;; NIL if not.
+;; Next are NH-GEN curried neighborhood generation functions which
+;; allow fixation of the extent and kinf of neighborhood and return a
+;; fuunction that can be called later with the stage desired and
+;; location of the neighborhood to complete the generation of the
+;; neighborhood with all of those parameters at a later date.
+;;
+;; These are usually used in a context like this where you want to
+;; talk about the shape and size of a neighborhood without making the
+;; whole object at the call site.
+;;
+;; (convolve stage (nh-gen-ortho 1) filter-fn effect-fn)
+
+;; A generic neighborhood generator.
+(defun nh-gen (set-fn map-fn ext)
+  (lambda (stage x y)
+    (make-nh :stage stage
+             :x x
+             :y y
+             :ext ext
+             :set-fn set-fn
+             :map-fn map-fn)))
+
+;; A specifc generator for ortho neighborhoods.
+(defun nh-gen-ortho (max-distance)
+  (lambda (stage x y)
+    (make-nh :stage stage
+             :x x
+             :y y
+             :ext (make-ext :max-distance max-distance)
+             :set-fn #'nh-set-fn-ortho
+             :map-fn #'nh-map-fn-ortho)))
+
+;; A specific generator for diag neighborhoods.
+(defun nh-gen-diag (max-distance)
+  (lambda (stage x y)
+    (make-nh :stage stage
+             :x x
+             :y y
+             :ext (make-ext :max-distance max-distance)
+             :set-fn #'nh-set-fn-diag
+             :map-fn #'nh-map-fn-diag)))
+
+;; A specific generator for circle neighborhoods.
+(defun nh-gen-circle (max-distance)
+  (lambda (stage x y)
+    (make-nh :stage stage
+             :x x
+             :y y
+             :ext (make-ext :max-distance max-distance)
+             :set-fn #'nh-set-fn-circle
+             :map-fn #'nh-map-fn-default)))
+
+;; A specific generator for quare neighborhoods.
+(defun nh-gen-square (max-distance)
+  (lambda (stage x y)
+    (make-nh :stage stage
+             :x x
+             :y y
+             :ext (make-ext :max-distance max-distance)
+             :set-fn #'nh-set-fn-square
+             :map-fn #'nh-map-fn-square)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A library of NH-SET-FN and NH-MAP-FN functions.
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This is an initial library of functions used to define different kinds
+;; of neighborhood sets and their higher order mapping functions. The
+;; NH-MAP-HN functions return two values, the list of results, and a number
+;; which indicates how many cells were actually examined. MAP-FN functions
+;; are carefully designed to only examine exactly the number of cells
+;; necessary to perform their work.
+
+;; ;;;;;;;;;;;;
+;; ORTHO neighborhoods
+;; ;;;;;;;;;;;;
 
 ;; Define an ortho neighborhood.
-(defun nh-def-ortho (n nx ny)
-  (let ((distance (distance n)))
-    (and (<= (abs nx) distance)
-         (<= (abs ny) distance)
+(defun nh-set-fn-ortho (n nx ny)
+  (let ((max-distance (ext-max-distance (nh-ext n))))
+    (and (<= (abs nx) max-distance)
+         (<= (abs ny) max-distance)
          (or (and (zerop nx) (zerop ny))
              (and (zerop nx) (not (zerop ny)))
              (and (not (zerop nx)) (zerop ny))))))
 
 ;; Implement a specialized nh-map function for ortho neighborhoods which will
 ;; reduce how many cells are examined.
-(defun nh-ortho-map-fn (n func)
+(defun nh-map-fn-ortho (n func)
   (let ((results ())
         (num-examined 0)
-        (distance (distance n)))
+        (max-distance (ext-max-distance (nh-ext n))))
 
     ;; compute vertical line results, include the origin
-    (loop :for y :from (- distance) :to distance :do
-       (let ((cell (nref n 0 y)))
+    (loop :for y :from (- max-distance) :to max-distance :do
+       (let ((cell (nh-ref n 0 y)))
          (incf num-examined)
          (when cell
            (push (funcall func cell) results))))
 
     ;; Then compute the left side of the horiz line, skipping the origin
-    (loop :for x :from (- distance) :below 0 :do
-       (let ((cell (nref n x 0)))
+    (loop :for x :from (- max-distance) :below 0 :do
+       (let ((cell (nh-ref n x 0)))
          (incf num-examined)
          (when cell
            (push (funcall func cell) results))))
 
     ;; Then compute the right side of the horz line, skipping the origin
-    (loop :for x :from 1 :to distance :do
-       (let ((cell (nref n x 0)))
+    (loop :for x :from 1 :to max-distance :do
+       (let ((cell (nh-ref n x 0)))
          (incf num-examined)
          (when cell
            (push (funcall func cell) results))))
 
-    ;; and finally return everything
-    (values (nreverse results) num-examined)))
+    ;; NOTE: We don't nreverse this like idiomatic usage, because there is
+    ;; no defined order of mapping the function across the neighborhood.
+    (values results num-examined)))
 
+;; ;;;;;;;;;;;;
+;; DIAG neighborhoods
+;; ;;;;;;;;;;;;
 
 ;; Define a diagonal neighborhood
-(defun nh-def-diag (n nx ny)
-  (let ((distance (distance n)))
-    (and (<= (abs nx) distance)
-         (<= (abs ny) distance)
+(defun nh-set-fn-diag (n nx ny)
+  (let ((max-distance (ext-max-distance (nh-ext n))))
+    (and (<= (abs nx) max-distance)
+         (<= (abs ny) max-distance)
          (= (abs nx) (abs ny)))))
 
+;; Implement a specialized map-fn for the diag neighborhood.
+(defun nh-map-fn-diag (n func)
+  (let ((results ())
+        (num-examined 0)
+        (max-distance (ext-max-distance (nh-ext n))))
+    ;; do left top to right bottom diagonal, including origin
+    (loop :for x :from (- max-distance) :to max-distance :do
+       (let ((cell (nh-ref n x (- x))))
+         (incf num-examined)
+         (when cell
+           (push (funcall func cell) results))))
+
+    ;; do left bottom to origin, skipping origin
+    (loop :for x :from (- max-distance) :below 0 :do
+       (let ((cell (nh-ref n x x)))
+         (incf num-examined)
+         (when cell
+           (push (funcall func cell) results))))
+
+    ;; do origin to upper right, skipping origin
+    (loop :for x :from 1 :to max-distance :do
+       (let ((cell (nh-ref n x x)))
+         (incf num-examined)
+         (when cell
+           (push (funcall func cell) results))))
+
+    ;; NOTE: We don't nreverse this like idiomatic usage, because there is
+    ;; no defined order of mapping the function across the neighborhood.
+    (values results num-examined)))
+
+;; ;;;;;;;;;;;;
+;; CIRCLE neighborhoods
+;; ;;;;;;;;;;;;
+
 ;; Define a circular neighborhood
-(defun nh-def-circle (n nx ny)
-  (let ((distance (distance n)))
+(defun nh-set-fn-circle (n nx ny)
+  (let ((max-distance (ext-max-distance (nh-ext n))))
     (<= (+ (* nx nx) (* ny ny))
-        (* distance distance))))
+        (* max-distance max-distance))))
+
+;; ;;;;;;;;;;;;
+;; SQUARE neighborhoods
+;; ;;;;;;;;;;;;
 
 ;; Define a square neighborhood
-(defun nh-def-square (n nx ny)
-  (let ((distance (distance n)))
-    (and (>= nx (- distance))
-         (>= ny (- distance))
-         (<= nx distance)
-         (<= ny distance))))
+(defun nh-set-fn-square (n nx ny)
+  (let ((max-distance (ext-max-distance (nh-ext n))))
+    (and (>= nx (- max-distance))
+         (>= ny (- max-distance))
+         (<= nx max-distance)
+         (<= ny max-distance))))
 
-;; Curried generator forms for neighborhoods. These return functions which
-;; know what kinf of set-fm and map-fn to use in a neighborhood, but still need
-;; to have the stage x y passed to it before it can finish making the
-;; neighborhood structure.
+(defun nh-map-fn-square (n func)
+  (let ((results ())
+        (num-examined 0)
+        (max-distance (ext-max-distance (nh-ext n))))
+    (loop :for y :from max-distance :downto (- max-distance) :do
+       (loop :for x :from (- max-distance) :to max-distance :do
+          (let ((cell (nh-ref n x y)))
+            (incf num-examined)
+            (when cell
+              (push (funcall func cell) results)))))
 
-;; a curried form of make-neighborhood to allow easier specification of how
-;; to make a neighborhood. Returns a function that will complete the job later.
-(defun nh-gen (nh-set-fn nh-map-fn distance)
-  (lambda (stage x y)
-    (make-neighborhood stage x y nh-set-fn distance :nh-map-fn nh-map-fn)))
+    ;; NOTE: We don't nreverse this like idiomatic usage, because there is
+    ;; no defined order of mapping the function across the neighborhood.
+    (values results num-examined)))
 
-;; a specifc one for generating ortho neighborhoods.
-(defun nh-gen-ortho (distance)
-  (lambda (stage x y)
-    (make-neighborhood
-     stage x y #'nh-def-ortho distance :nh-map-fn #'nh-ortho-map-fn)))
+;; ;;;;;;;;;;;;
+;; DEFAULT (square) neighborhoods
+;; ;;;;;;;;;;;;
 
-;; a specifc one for generating diag neighborhoods.
-(defun nh-gen-diag (distance)
-  (lambda (stage x y)
-    (make-neighborhood
-     stage x y #'nh-def-diag distance :nh-map-fn #'nh-default-map-fn)))
+;; Define the default nh set function, which is the square set.
+(defun nh-set-fn-default (n nx ny)
+  (nh-set-fn-square n nx ny))
 
-;; a specifc one for generating circle neighborhoods.
-(defun nh-gen-circle (distance)
-  (lambda (stage x y)
-    (make-neighborhood
-     stage x y #'nh-def-circle distance :nh-map-fn #'nh-default-map-fn)))
-
-;; a specifc one for generating circle neighborhoods.
-(defun nh-gen-square (distance)
-  (lambda (stage x y)
-    (make-neighborhood
-     stage x y #'nh-def-square distance :nh-map-fn #'nh-default-map-fn)))
+;; The default map function will always work no matter the set-fn, but
+;; it'll examine all possible cells to do its work so it might not be as
+;; efficient as a specific one designed to a neighborhood.
+(defun nh-map-fn-default (n func)
+  (nh-map-fn-square n func))
 
 
 
 
-;; Testing codes.
+
+
+
+
+
+
+
+
+
+
+;;;; Testing codes.
 
 (defun display-neighborhood (n)
-  (with-accessors ((distance distance)) n
-    (format t "  NH Display: distance = ~A~%" distance)
-    (loop :for y :from distance :downto (- distance) :do
+  (let ((max-distance (ext-max-distance (nh-ext n))))
+    (format t "  NH Display: max-distance = ~A~%" max-distance)
+    (loop :for y :from max-distance :downto (- max-distance) :do
        (format t "    ")
-       (loop :for x :from (- distance) :to distance :do
-          (format t "~:[-~;X~]" (nref n x y)))
+       ;; First draw a strip of the neighborhood
+       (loop :for x :from (- max-distance) :to max-distance :do
+          (format t "~:[-~;X~]" (nh-ref n x y)))
 
-       ;; draw a strip of the actual stage data.
-       ;; also show the real neighborhood in the stage.
+       ;; then on the same line draw a strip of the actual stage data.
        (format t "    ")
-       (loop :for x :from (- distance) :to distance :do
-          (let ((cell (nref n x y)))
+       (loop :for x :from (- max-distance) :to max-distance :do
+          (let ((cell (nh-ref n x y)))
             (format t "~A"
                     (cond
                       ((null cell) " ")
@@ -253,7 +421,8 @@
 (defun neighborhood-test-nh-map (n)
   (format t "  Performing nh-map test...~%")
   (let ((walkablep 0)
-        (non-walkablep 0))
+        (non-walkablep 0)
+        (max-distance (ext-max-distance (nh-ext n))))
     ;; we ignore results, since we side effect in the mapped function.
     ;; We record num-examined, which is how many cells were looked at in
     ;; the neighborhood to determine membership.
@@ -263,7 +432,7 @@
                         (incf walkablep)
                         (incf non-walkablep))))
       (declare (ignore results))
-      (let* ((potential-examined (expt (1+ (* (distance n) 2)) 2))
+      (let* ((potential-examined (expt (1+ (* max-distance 2)) 2))
              (examined-savings-per (- 1.0 (/ num-examined potential-examined))))
 
         (format t "    Found [walkablep = ~A, non-walkablep = ~A, total = ~A] cells.~%"
@@ -279,32 +448,34 @@
 ;; distance and then run all the test. check-distance is for checking cells
 ;; at that check-distance in the compas directions. Also perform a map-nh
 ;; test of the nh.
-(defun neighbor-tests (x y distance check-distance)
-  (let ((tests `((,#'nh-def-ortho ,#'nh-ortho-map-fn "Ortho NH Test")
-                 (,#'nh-def-diag ,#'nh-default-map-fn "Diag NH Test")
-                 (,#'nh-def-circle ,#'nh-default-map-fn "Circle NH Test")
-                 (,#'nh-def-square ,#'nh-default-map-fn "Square NH Test")))
-        (dir-meths `((,#'N "N")
-                     (,#'NW "NW")
-                     (,#'W "W")
-                     (,#'SW "SW")
-                     (,#'S "S")
-                     (,#'SE "SE")
-                     (,#'E "E")
-                     (,#'NE "NE")))
+(defun neighbor-tests (x y max-distance check-distance)
+  (let ((tests `((,#'nh-set-fn-ortho ,#'nh-map-fn-ortho "Ortho NH Test")
+                 (,#'nh-set-fn-diag ,#'nh-map-fn-diag "Diag NH Test")
+                 (,#'nh-set-fn-circle ,#'nh-map-fn-default "Circle NH Test")
+                 (,#'nh-set-fn-square ,#'nh-map-fn-default "Square NH Test")))
+        (dir-meths `((,#'nh-n "N")
+                     (,#'nh-nw "NW")
+                     (,#'nh-w "W")
+                     (,#'nh-sw "SW")
+                     (,#'nh-s "S")
+                     (,#'nh-se "SE")
+                     (,#'nh-e "E")
+                     (,#'nh-ne "NE")))
         (stage (make-stage 'labyrinth)))
 
     (loop :for (nh-func nh-map-fn desc) :in tests :do
-       (format t "~A @ [x=~A, y=~A] Distance = ~A, Check Distance = ~A~%"
-               desc x y distance check-distance)
-       (let* (;; TODO, make nh-func a keyword arg of :nh-def and set it to
-              ;; square, same with the mh-map-fn.
-              (nh (make-neighborhood stage x y nh-func distance
-                                     :nh-map-fn nh-map-fn)))
+       (format t "~A @ [x=~A, y=~A] Max Distance = ~A, Check Distance = ~A~%"
+               desc x y max-distance check-distance)
+       (let* ((nh (make-nh :stage stage
+                           :x x
+                           :y y
+                           :ext (make-ext :max-distance max-distance)
+                           :set-fn nh-func
+                           :map-fn nh-map-fn)))
 
          (display-neighborhood nh)
 
-         (format t "  Origin: ~S~%" (origin nh))
+         (format t "  Origin: ~S~%" (nh-origin nh))
 
          (loop :for (dir-meth dir-desc) :in dir-meths :do
             (format t "    (~A ~A): ~S~%"
