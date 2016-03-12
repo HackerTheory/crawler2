@@ -9,8 +9,7 @@
     (background (gray 0.2))
     (dotimes (x width)
       (dotimes (y height)
-        (draw-cell x y)))
-    (sleep 1)))
+        (draw-cell x y)))))
 
 (defmethod draw-cell (x y)
   (with-pen (make-pen :fill (select-color x y))

@@ -9,8 +9,8 @@
   (map-fn #'nmap-default))
 
 (defstruct (extent (:conc-name nil))
-  (min-distance 1)
-  (max-distance 1))
+  (minimum 1)
+  (maximum 1))
 
 (defun stage-coords (neighborhood nx ny)
   (with-slots (x y) neighborhood
@@ -73,122 +73,146 @@
 (defmethod neighborhood ((layout (eql :circle)) &rest extent-args)
   (generate-neighborhood #'nset-circle #'nmap-default extent-args))
 
+(defmethod neighborhood ((layout (eql :circle-outline)) &rest extent-args)
+  (generate-neighborhood #'nset-circle-outline #'nmap-default extent-args))
+
+(defmethod neighborhood ((layout (eql :circle-outline+origin)) &rest extent-args)
+  (generate-neighborhood #'nset-circle-outline+origin #'nmap-default extent-args))
+
 (defmethod neighborhood ((layout (eql :square)) &rest extent-args)
-  (generate-neighborhood #'nset-square #'nmap-square extent-args))
+  (generate-neighborhood #'nset-default #'nmap-default extent-args))
 
 (defmethod neighborhood ((layout (eql :square-outline)) &rest extent-args)
   (generate-neighborhood #'nset-square-outline #'nmap-square-outline extent-args))
 
+(defmethod neighborhood ((layout (eql :square-outline+origin)) &rest extent-args)
+  (generate-neighborhood #'nset-square-outline+origin #'nmap-square-outline+origin extent-args))
+
 (defun nset-ortho (neighborhood x y)
-  (with-slots (max-distance) (extent neighborhood)
-    (and (<= (abs x) max-distance)
-         (<= (abs y) max-distance)
+  (with-slots (max) (extent neighborhood)
+    (and (<= (abs x) max)
+         (<= (abs y) max)
          (or (and (zerop x) (zerop y))
              (and (zerop x) (not (zerop y)))
              (and (not (zerop x)) (zerop y))))))
 
 (defun nmap-ortho (neighborhood func)
-  (with-slots (max-distance) (extent neighborhood)
+  (with-slots (max) (extent neighborhood)
     (let ((results))
-      (loop :for y :from (- max-distance) :to max-distance
+      (loop :for y :from (- max) :to max
             :for cell = (nref neighborhood 0 y)
             :when cell
               :collect (funcall func cell) :into results)
-      (loop :for x :from (- max-distance) :below 0
+      (loop :for x :from (- max) :below 0
             :for cell = (nref neighborhood x 0)
             :when cell
               :collect (funcall func cell) :into results)
-      (loop :for x :from 1 :to max-distance
+      (loop :for x :from 1 :to max
             :for cell = (nref neighborhood x 0)
             :when cell
               :collect (funcall func cell) :into results)
       results)))
 
 (defun nset-diag (neighborhood x y)
-  (with-slots (max-distance) (extent neighborhood)
-    (and (<= (abs x) max-distance)
-         (<= (abs y) max-distance)
+  (with-slots (max) (extent neighborhood)
+    (and (<= (abs x) max)
+         (<= (abs y) max)
          (= (abs x) (abs y)))))
 
 (defun nmap-diag (neighborhood func)
-  (with-slots (max-distance) (extent neighborhood)
+  (with-slots (max) (extent neighborhood)
     (let ((results))
-      (loop :for x :from (- max-distance) :to max-distance
+      (loop :for x :from (- max) :to max
             :for cell = (nref neighborhood x (- x))
             :when cell
               :collect (funcall func cell) :into results)
-      (loop :for x :from (- max-distance) :below 0
+      (loop :for x :from (- max) :below 0
             :for cell = (nref neighborhood x x)
             :when cell
               :collect (funcall func cell) :into results)
-      (loop :for x :from 1 :to max-distance
+      (loop :for x :from 1 :to max
             :for cell = (nref neighborhood x x)
             :when cell
               :collect (funcall func cell) :into results)
       results)))
 
 (defun nset-circle (neighborhood x y)
-  (with-slots (max-distance) (extent neighborhood)
+  (with-slots (max) (extent neighborhood)
     (<= (+ (* x x) (* y y))
-        (* max-distance max-distance))))
+        (* max max))))
 
-(defun nset-square (neighborhood x y)
-  (with-slots (max-distance) (extent neighborhood)
-    (and (>= x (- max-distance))
-         (>= y (- max-distance))
-         (<= x max-distance)
-         (<= y max-distance))))
+(defun nset-circle-outline (neighborhood x y)
+  (with-slots (minimum maximum) (extent neighborhood)
+    (and (<= (+ (* x x) (* y y))
+             (* maximum maximum))
+         (> (+ (* x x) (* y y))
+            (* (1- minimum) (1- minimum))))))
 
-(defun nmap-square (neighborhood func)
-  (with-slots (max-distance) (extent neighborhood)
-    (let ((results))
-      (loop :for y :from max-distance :downto (- max-distance)
-            :do (loop :for x :from (- max-distance) :to max-distance
-                      :for cell = (nref neighborhood x y)
-                      :when cell
-                        :collect (funcall func cell) :into results))
-      results)))
+(defun nset-circle-outline+origin (neighborhood x y)
+  (or (nset-circle-outline neighborhood x y)
+      (and (zerop x)
+           (zerop y))))
 
 (defun nset-square-outline (neighborhood x y)
-  (with-slots (min-distance max-distance) (extent neighborhood)
+  (with-slots (minimum maximum) (extent neighborhood)
     (and
-     (and (>= x (- max-distance))
-          (>= y (- max-distance))
-          (<= x max-distance)
-          (<= y max-distance))
+     (and (>= x (- maximum))
+          (>= y (- maximum))
+          (<= x maximum)
+          (<= y maximum))
      (not
-      (and (> x (- min-distance))
-           (> y (- min-distance))
-           (< x min-distance)
-           (< y min-distance))))))
+      (and (> x (- minimum))
+           (> y (- minimum))
+           (< x minimum)
+           (< y minimum))))))
 
 (defun nmap-square-outline (neighborhood func)
-  (with-slots (min-distance max-distance) (extent neighborhood)
+  (with-slots (minimum maximum) (extent neighborhood)
     (let ((results))
-      (loop :for y :from min-distance :to max-distance
-            :do (loop :for x :from (- max-distance) :to max-distance
+      (loop :for y :from minimum :to maximum
+            :do (loop :for x :from (- maximum) :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
                         :collect (funcall func cell) :into results))
-      (loop :for y :from (- max-distance) :to (- min-distance)
-            :do (loop :for x :from (- max-distance) :to max-distance
+      (loop :for y :from (- maximum) :to (- minimum)
+            :do (loop :for x :from (- maximum) :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
                         :collect (funcall func cell) :into results))
-      (loop :for y :from (- min-distance) :to min-distance
-            :do (loop :for x :from (- max-distance) :to (- min-distance)
+      (loop :for y :from (- minimum) :to minimum
+            :do (loop :for x :from (- maximum) :to (- minimum)
                       :for cell = (nref neighborhood x y)
                       :when cell
                         :collect (funcall func cell) :into results))
-      (loop :for y :from (- min-distance) :to min-distance
-            :do (loop :for x :from min-distance :to max-distance
+      (loop :for y :from (- minimum) :to minimum
+            :do (loop :for x :from minimum :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
                         :collect (funcall func cell) :into results))
       results)))
 
+(defun nset-square-outline+origin (neighborhood x y)
+  (or (nset-square-outline neighborhood x y)
+      (and (zerop x)
+           (zerop y))))
+
+(defun nmap-square-outline+origin (neighborhood func)
+  (append (nmap-square-outline neighborhood func)
+          (list (funcall func (origin neighborhood)))))
+
 (defun nset-default (neighborhood x y)
-  (nset-square neighborhood x y))
+  (with-slots (maximum) (extent neighborhood)
+    (and (>= x (- maximum))
+         (>= y (- maximum))
+         (<= x maximum)
+         (<= y maximum))))
 
 (defun nmap-default (neighborhood func)
-  (nmap-square neighborhood func))
+  (with-slots (maximum) (extent neighborhood)
+    (let ((results))
+      (loop :for y :from maximum :downto (- maximum)
+            :do (loop :for x :from (- maximum) :to maximum
+                      :for cell = (nref neighborhood x y)
+                      :when cell
+                        :collect (funcall func cell) :into results))
+      results)))
