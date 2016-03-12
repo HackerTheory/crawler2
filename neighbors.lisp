@@ -9,6 +9,7 @@
   (map-fn #'nmap-default))
 
 (defstruct (extent (:conc-name nil))
+  (min-distance 1)
   (max-distance 1))
 
 (defun stage-coords (neighborhood nx ny)
@@ -18,12 +19,12 @@
 (defun nmap (neighborhood func)
   (funcall (map-fn neighborhood) neighborhood func))
 
-(defun neighborp (neighborhood x y)
+(defun nsetp (neighborhood x y)
   (funcall (set-fn neighborhood) neighborhood x y))
 
 (defun nref (neighborhood x y)
   (with-slots (stage) neighborhood
-    (when (neighborp neighborhood x y)
+    (when (nsetp neighborhood x y)
       (multiple-value-bind (stage-x stage-y) (stage-coords neighborhood x y)
         (valid-cell-p stage stage-x stage-y)))))
 
@@ -54,27 +55,29 @@
 (defun ne (neighborhood &optional (distance 1))
   (nref neighborhood distance distance))
 
-(defmethod neighborhood :around (layout &key)
-  (multiple-value-bind (set-fn map-fn extent-args) (call-next-method)
-    (lambda (stage x y)
-      (make-neighborhood :stage stage
-                         :x x
-                         :y y
-                         :extent (apply #'make-extent extent-args)
-                         :set-fn set-fn
-                         :map-fn map-fn))))
+(defun generate-neighborhood (set-fn map-fn extent-args)
+  (lambda (stage x y)
+    (make-neighborhood :stage stage
+                       :x x
+                       :y y
+                       :extent (apply #'make-extent extent-args)
+                       :set-fn set-fn
+                       :map-fn map-fn)))
 
 (defmethod neighborhood ((layout (eql :ortho)) &rest extent-args)
-  (values #'nset-ortho #'nmap-ortho extent-args))
+  (generate-neighborhood #'nset-ortho #'nmap-ortho extent-args))
 
 (defmethod neighborhood ((layout (eql :diag)) &rest extent-args)
-  (values #'nset-diag #'nmap-diag extent-args))
+  (generate-neighborhood #'nset-diag #'nmap-diag extent-args))
 
 (defmethod neighborhood ((layout (eql :circle)) &rest extent-args)
-  (values #'nset-circle #'nmap-default extent-args))
+  (generate-neighborhood #'nset-circle #'nmap-default extent-args))
 
 (defmethod neighborhood ((layout (eql :square)) &rest extent-args)
-  (values #'nset-square #'nmap-square extent-args))
+  (generate-neighborhood #'nset-square #'nmap-square extent-args))
+
+(defmethod neighborhood ((layout (eql :square-outline)) &rest extent-args)
+  (generate-neighborhood #'nset-square-outline #'nmap-square-outline extent-args))
 
 (defun nset-ortho (neighborhood x y)
   (with-slots (max-distance) (extent neighborhood)
@@ -150,6 +153,49 @@
           (examined 0))
       (loop :for y :from max-distance :downto (- max-distance)
             :do (loop :for x :from (- max-distance) :to max-distance
+                      :for cell = (nref neighborhood x y)
+                      :do (incf examined)
+                      :when cell
+                        :collect (funcall func cell) :into results))
+      (values results examined))))
+
+(defun nset-square-outline (neighborhood x y)
+  (with-slots (min-distance max-distance) (extent neighborhood)
+    (and
+     (and (>= x (- max-distance))
+          (>= y (- max-distance))
+          (<= x max-distance)
+          (<= y max-distance))
+     (not
+      (and (> x (- min-distance))
+           (> y (- min-distance))
+           (< x min-distance)
+           (< y min-distance))))))
+
+(defun nmap-square-outline (neighborhood func)
+  (with-slots (max-distance min-distance) (extent neighborhood)
+    (let ((results)
+          (examined 0))
+      (loop :for y :from min-distance :to max-distance
+            :do (loop :for x :from (- max-distance) :to max-distance
+                      :for cell = (nref neighborhood x y)
+                      :do (incf examined)
+                      :when cell
+                        :collect (funcall func cell) :into results))
+      (loop :for y :from (- max-distance) :to (- min-distance)
+            :do (loop :for x :from (- max-distance) :to max-distance
+                      :for cell = (nref neighborhood x y)
+                      :do (incf examined)
+                      :when cell
+                        :collect (funcall func cell) :into results))
+      (loop :for y :from (- min-distance) :to min-distance
+            :do (loop :for x :from (- max-distance) :to (- min-distance)
+                      :for cell = (nref neighborhood x y)
+                      :do (incf examined)
+                      :when cell
+                        :collect (funcall func cell) :into results))
+      (loop :for y :from (- min-distance) :to min-distance
+            :do (loop :for x :from min-distance :to max-distance
                       :for cell = (nref neighborhood x y)
                       :do (incf examined)
                       :when cell
