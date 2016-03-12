@@ -198,8 +198,8 @@
            (zerop y))))
 
 (defun nmap-square-outline+origin (neighborhood func)
-  (append (nmap-square-outline neighborhood func)
-          (list (funcall func (origin neighborhood)))))
+  (cons (funcall func (origin neighborhood))
+        (nmap-square-outline neighborhood func)))
 
 (defun nset-default (neighborhood x y)
   (with-slots (maximum) (extent neighborhood)
