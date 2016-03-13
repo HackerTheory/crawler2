@@ -10,6 +10,9 @@
    (room-density :reader room-density
                  :initarg :room-density
                  :initform 0.5)
+   (corridor-windiness :reader corridor-windiness
+                       :initarg :corridor-windiness
+                       :initform 0)
    (rooms :accessor rooms
           :initform nil)
    (regions :accessor regions
@@ -43,5 +46,5 @@
   (convolve
    stage
    (layout :square-outline+origin)
-   (lambda (nh) (every #'null (remove nil (nmap nh #'walkablep))))
-   (lambda (nh) (setf (walkablep (origin nh)) t))))
+   #'filter-carvable
+   #'carve))

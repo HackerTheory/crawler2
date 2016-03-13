@@ -180,12 +180,12 @@
                       :for cell = (nref neighborhood x y)
                       :when cell
                         :do (push (funcall func cell) results)))
-      (loop :for y :from (- minimum) :to minimum
+      (loop :for y :from (1+ (- minimum)) :below minimum
             :do (loop :for x :from (- maximum) :to (- minimum)
                       :for cell = (nref neighborhood x y)
                       :when cell
                         :do (push (funcall func cell) results)))
-      (loop :for y :from (- minimum) :to minimum
+      (loop :for y :from (1+ (- minimum)) :below minimum
             :do (loop :for x :from minimum :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell

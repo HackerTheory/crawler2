@@ -18,4 +18,5 @@
     :components
     ((:file "stage")
      (:file "region")
-     (:file "room")))))
+     (:file "room")
+     (:file "corridor")))))
