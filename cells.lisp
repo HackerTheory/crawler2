@@ -32,12 +32,12 @@
 (defmethod count-cells (stage)
   (* (width stage) (height stage)))
 
-(defun convolve (stage neighborhood-fn filter effect)
+(defun convolve (stage layout filter effect)
   (with-slots (width height) stage
     (loop :with affected-p
           :for x :below width
           :do (loop :for y :below height
-                    :for neighborhood = (funcall neighborhood-fn stage x y)
+                    :for neighborhood = (funcall layout stage x y)
                     :when (funcall filter neighborhood)
                       :do (let ((value (funcall effect neighborhood)))
                             (setf affected-p (or affected-p value))))

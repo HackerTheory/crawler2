@@ -38,4 +38,10 @@
           height (ensure-stage-size stage height))))
 
 (defmethod build ((stage labyrinth))
-  (add-rooms stage))
+  (add-rooms stage)
+  ;; test convolution
+  (convolve
+   stage
+   (layout :square-outline+origin)
+   (lambda (nh) (every #'null (remove nil (nmap nh #'walkablep))))
+   (lambda (nh) (setf (walkablep (origin nh)) t))))

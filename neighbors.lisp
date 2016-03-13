@@ -103,15 +103,15 @@
       (loop :for y :from (- maximum) :to maximum
             :for cell = (nref neighborhood 0 y)
             :when cell
-              :collect (funcall func cell) :into results)
+              :do (push (funcall func cell) results))
       (loop :for x :from (- maximum) :below 0
             :for cell = (nref neighborhood x 0)
             :when cell
-              :collect (funcall func cell) :into results)
+              :do (push (funcall func cell) results))
       (loop :for x :from 1 :to maximum
             :for cell = (nref neighborhood x 0)
             :when cell
-              :collect (funcall func cell) :into results)
+              :do (push (funcall func cell) results))
       results)))
 
 (defun nset-diag (neighborhood x y)
@@ -126,15 +126,15 @@
       (loop :for x :from (- maximum) :to maximum
             :for cell = (nref neighborhood x (- x))
             :when cell
-              :collect (funcall func cell) :into results)
+              :do (push (funcall func cell) results))
       (loop :for x :from (- maximum) :below 0
             :for cell = (nref neighborhood x x)
             :when cell
-              :collect (funcall func cell) :into results)
+              :do (push (funcall func cell) results))
       (loop :for x :from 1 :to maximum
             :for cell = (nref neighborhood x x)
             :when cell
-              :collect (funcall func cell) :into results)
+              :do (push (funcall func cell) results))
       results)))
 
 (defun nset-circle (neighborhood x y)
@@ -174,22 +174,22 @@
             :do (loop :for x :from (- maximum) :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
-                        :collect (funcall func cell) :into results))
+                        :do (push (funcall func cell) results)))
       (loop :for y :from (- maximum) :to (- minimum)
             :do (loop :for x :from (- maximum) :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
-                        :collect (funcall func cell) :into results))
+                        :do (push (funcall func cell) results)))
       (loop :for y :from (- minimum) :to minimum
             :do (loop :for x :from (- maximum) :to (- minimum)
                       :for cell = (nref neighborhood x y)
                       :when cell
-                        :collect (funcall func cell) :into results))
+                        :do (push (funcall func cell) results)))
       (loop :for y :from (- minimum) :to minimum
             :do (loop :for x :from minimum :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
-                        :collect (funcall func cell) :into results))
+                        :do (push (funcall func cell) results)))
       results)))
 
 (defun nset-square-outline+origin (neighborhood x y)
@@ -215,5 +215,5 @@
             :do (loop :for x :from (- maximum) :to maximum
                       :for cell = (nref neighborhood x y)
                       :when cell
-                        :collect (funcall func cell) :into results))
+                        :do (push (funcall func cell) results)))
       results)))
