@@ -1,8 +1,7 @@
 (in-package :crawler2)
 
-(defstruct (region
-            (:conc-name nil)
-            (:constructor %make-region (id)))
+(defstruct (region (:conc-name nil)
+                   (:constructor %make-region (id)))
   id connectors)
 
 (defmethod make-region ((stage labyrinth))

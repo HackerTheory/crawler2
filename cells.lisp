@@ -1,14 +1,12 @@
 (in-package :crawler2)
 
-(defstruct (cell
-            (:conc-name nil)
-            (:constructor %make-cell))
-  x y walkablep region)
+(defstruct (cell (:constructor %make-cell))
+  x y carved-p region)
 
 (defmethod print-object ((o cell) stream)
-  (with-slots (x y walkablep region) o
+  (with-slots (x y) o
     (print-unreadable-object (o stream)
-      (format stream "X:~S, Y:~S" x y walkablep region))))
+      (format stream "X:~S, Y:~S" x y))))
 
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
@@ -28,9 +26,6 @@
 
 (defmethod make-cell (stage x y buffer)
   (setf (cell stage x y :buffer buffer) (%make-cell :x x :y y)))
-
-(defmethod count-cells (stage)
-  (* (width stage) (height stage)))
 
 (defun convolve (stage layout filter effect &key (start '(1 1)) (end '(-1 -1)))
   (with-slots (width height) stage

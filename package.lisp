@@ -11,6 +11,6 @@
            #:height
            #:grid
            #:cell
-           #:walkablep))
+           #:cell-carved-p))
 
 (in-package :crawler2)

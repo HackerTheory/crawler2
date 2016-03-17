@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
 (defun filter-carvable (neighborhood)
-  (every #'null (nmap neighborhood #'walkablep)))
+  (every #'null (nmap neighborhood #'cell-carved-p)))
 
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (clamp (corridor-windiness stage) 0 1))
@@ -19,29 +19,28 @@
   (with-slots (width height) stage
     (remove-if
      (lambda (dir)
-       (or (< (+ x (first dir)) 1)
-           (< (+ y (second dir)) 1)
-           (> (+ x (first dir)) (- width 2))
-           (> (+ y (second dir)) (- height 2))
-           (walkablep (get-cell stage `(,x ,y) dir 1 t))))
+       (or (zerop (+ x (first dir)))
+           (zerop (+ y (second dir)))
+           (>= (+ x (first dir)) (1- width))
+           (>= (+ y (second dir)) (1- height))
+           (cell-carved-p (get-cell stage `(,x ,y) dir 1 t))))
      '((-1 0) (1 0) (0 -1) (0 1)))))
 
-(defun carve-tile (stage cells)
-  (let* ((cell (pick-cell stage cells))
-         (neighbors (neighbors stage (first cell) (second cell))))
-    (deletef cells cell :test #'equal)
+(defun carve-cell (stage cells)
+  (let* ((frontier (pick-cell stage cells))
+         (neighbors (neighbors stage (first frontier) (second frontier))))
+    (deletef cells frontier :test #'equal)
     (when neighbors
       (loop :with dir = (rng 'elt :list neighbors)
-            :with new-cell = (list cell (get-cell stage cell dir 1))
             :for i :below 2
-            :for tile = (get-cell stage cell dir i t)
-            :do (setf (walkablep tile) t)
-                (setf (region tile) (current-region stage))
-            :finally (appendf cells new-cell))))
+            :for cell = (get-cell stage frontier dir i t)
+            :do (setf (cell-carved-p cell) t
+                      (cell-region cell) (current-region stage))
+            :finally (appendf cells (list frontier (get-cell stage frontier dir 1))))))
   cells)
 
 (defun carve (neighborhood)
   (with-slots (x y) (origin neighborhood)
     (loop :with cells = `((,x ,y))
           :while cells
-          :do (setf cells (carve-tile (stage neighborhood) cells)))))
+          :do (setf cells (carve-cell (stage neighborhood) cells)))))
