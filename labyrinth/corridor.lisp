@@ -8,39 +8,37 @@
       (rng 'elt :list cells)
       (first (last cells))))
 
-(defun get-cell (stage cell dir &optional (scalar 1) tilep)
-  (let* ((scale (list (* (first dir) (1+ scalar))
-                      (* (second dir) (1+ scalar))))
-         (cell (list (+ (first cell) (first scale))
-                     (+ (second cell) (second scale)))))
-    (if tilep (apply #'cell stage cell) cell)))
+(defun get-cell (stage cell dir scalar)
+  (with-slots (x y) cell
+    (let ((coords (mapcar #'+ (mapcar #'* dir `(,scalar ,scalar)) `(,x ,y))))
+      (apply #'cell stage coords))))
 
-(defun neighbors (stage x y)
+(defun neighbors (stage cell)
   (with-slots (width height) stage
-    (remove-if
-     (lambda (dir)
-       (or (zerop (+ x (first dir)))
-           (zerop (+ y (second dir)))
-           (>= (+ x (first dir)) (1- width))
-           (>= (+ y (second dir)) (1- height))
-           (cell-carved-p (get-cell stage `(,x ,y) dir 1 t))))
-     '((-1 0) (1 0) (0 -1) (0 1)))))
+    (with-slots (x y) cell
+      (remove-if
+       (lambda (dir)
+         (or (zerop (+ x (first dir)))
+             (zerop (+ y (second dir)))
+             (>= (+ x (first dir)) (1- width))
+             (>= (+ y (second dir)) (1- height))
+             (cell-carved-p (get-cell stage cell dir 2))))
+       '((-1 0) (1 0) (0 -1) (0 1))))))
 
 (defun carve-cell (stage cells)
   (let* ((frontier (pick-cell stage cells))
-         (neighbors (neighbors stage (first frontier) (second frontier))))
+         (neighbors (neighbors stage frontier)))
     (deletef cells frontier :test #'equal)
     (when neighbors
       (loop :with dir = (rng 'elt :list neighbors)
-            :for i :below 2
-            :for cell = (get-cell stage frontier dir i t)
+            :for i from 1 :to 2
+            :for cell = (get-cell stage frontier dir i)
             :do (setf (cell-carved-p cell) t
                       (cell-region cell) (current-region stage))
-            :finally (appendf cells (list frontier (get-cell stage frontier dir 1))))))
+            :finally (appendf cells (list frontier (get-cell stage frontier dir 2))))))
   cells)
 
 (defun carve (neighborhood)
-  (with-slots (x y) (origin neighborhood)
-    (loop :with cells = `((,x ,y))
-          :while cells
-          :do (setf cells (carve-cell (stage neighborhood) cells)))))
+  (loop :with cells = `(,(origin neighborhood))
+        :while cells
+        :do (setf cells (carve-cell (stage neighborhood) cells))))
