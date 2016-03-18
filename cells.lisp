@@ -27,13 +27,12 @@
 (defmethod make-cell (stage x y buffer)
   (setf (cell stage x y :buffer buffer) (%make-cell :x x :y y)))
 
-(defun convolve (stage layout filter effect &key (start '(1 1)) (end '(-1 -1)))
+(defun convolve (stage layout filter effect)
   (with-slots (width height) stage
     (loop :with affected-p
-          :for x :from (first start) :below (+ width (first end))
-          :do (loop :for y from (second start) :below (+ height (second end))
-                    :for neighborhood = (funcall layout stage x y)
-                    :when (funcall filter neighborhood)
-                      :do (let ((value (funcall effect neighborhood)))
-                            (setf affected-p (or affected-p value))))
+          :for x :from 1 :below (1- width)
+          :do (loop :for y :from 1 :below (1- height)
+                    :for neighborhood = (funcall (layout layout) stage x y)
+                    :when (funcall filter stage neighborhood)
+                      :do (setf affected-p (or affected-p (funcall effect stage neighborhood))))
           :finally (return affected-p))))

@@ -1,6 +1,6 @@
 (in-package :crawler2)
 
-(defun filter-carvable (neighborhood)
+(defmethod filter-carvable ((stage labyrinth) neighborhood)
   (every #'null (nmap neighborhood #'cell-carved-p)))
 
 (defmethod pick-cell ((stage labyrinth) cells)
@@ -8,37 +8,33 @@
       (rng 'elt :list cells)
       (first (last cells))))
 
-(defun get-cell (stage cell dir scalar)
-  (with-slots (x y) cell
-    (let ((coords (mapcar #'+ (mapcar #'* dir `(,scalar ,scalar)) `(,x ,y))))
-      (apply #'cell stage coords))))
+(defmethod choose-uncarved ((stage labyrinth) neighborhood)
+  (with-slots (width height) (stage neighborhood)
+    (rng 'elt :list
+         (remove-if
+          (lambda (dir)
+            (with-slots (x y) (funcall dir neighborhood)
+              (or (zerop x)
+                  (zerop y)
+                  (>= x (1- width))
+                  (>= y (1- height))
+                  (cell-carved-p (funcall dir neighborhood 2)))))
+          '(n s e w)))))
 
-(defun neighbors (stage cell)
-  (with-slots (width height) stage
-    (with-slots (x y) cell
-      (remove-if
-       (lambda (dir)
-         (or (zerop (+ x (first dir)))
-             (zerop (+ y (second dir)))
-             (>= (+ x (first dir)) (1- width))
-             (>= (+ y (second dir)) (1- height))
-             (cell-carved-p (get-cell stage cell dir 2))))
-       '((-1 0) (1 0) (0 -1) (0 1))))))
+(defmethod carve-cell ((stage labyrinth) frontier cells)
+  (with-slots (x y) frontier
+    (when-let* ((neighborhood (funcall (layout :ortho :maximum 2) stage x y))
+                (dir (choose-uncarved stage neighborhood)))
+      (dotimes (i 2)
+        (let ((cell (funcall dir neighborhood (1+ i))))
+          (setf (cell-carved-p cell) t
+                (cell-region cell) (current-region stage))))
+      (appendf cells (list frontier (funcall dir neighborhood 2))))
+    cells))
 
-(defun carve-cell (stage cells)
-  (let* ((frontier (pick-cell stage cells))
-         (neighbors (neighbors stage frontier)))
-    (deletef cells frontier :test #'equal)
-    (when neighbors
-      (loop :with dir = (rng 'elt :list neighbors)
-            :for i from 1 :to 2
-            :for cell = (get-cell stage frontier dir i)
-            :do (setf (cell-carved-p cell) t
-                      (cell-region cell) (current-region stage))
-            :finally (appendf cells (list frontier (get-cell stage frontier dir 2))))))
-  cells)
-
-(defun carve (neighborhood)
-  (loop :with cells = `(,(origin neighborhood))
+(defmethod carve-corridor ((stage labyrinth) neighborhood)
+  (loop :with cells = (list (origin neighborhood))
         :while cells
-        :do (setf cells (carve-cell (stage neighborhood) cells))))
+        :for cell = (pick-cell stage cells)
+        :do (deletef cells cell)
+            (setf cells (carve-cell stage cell cells))))

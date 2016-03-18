@@ -42,9 +42,4 @@
 
 (defmethod build ((stage labyrinth))
   (add-rooms stage)
-  ;; test convolution
-  (convolve
-   stage
-   (layout :square-outline+origin)
-   #'filter-carvable
-   #'carve))
+  (convolve stage :square-outline+origin #'filter-carvable #'carve-corridor))
