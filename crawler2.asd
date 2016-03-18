@@ -10,9 +10,9 @@
   :components
   ((:file "package")
    (:file "random")
-   (:file "buffers")
-   (:file "cells")
-   (:file "neighbors")
+   (:file "buffer")
+   (:file "cell")
+   (:file "neighborhood")
    (:file "stage")
    (:module "labyrinth"
     :components

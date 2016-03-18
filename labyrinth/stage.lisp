@@ -9,16 +9,14 @@
                   :initform 11)
    (room-density :reader room-density
                  :initarg :room-density
-                 :initform 0.5)
+                 :initform 0.65)
    (corridor-windiness :reader corridor-windiness
                        :initarg :corridor-windiness
                        :initform 0)
    (rooms :accessor rooms
           :initform nil)
    (regions :accessor regions
-            :initform (make-hash-table))
-   (current-region :accessor current-region
-                   :initform 0)))
+            :initform (make-hash-table))))
 
 (defmethod ensure-stage-size ((stage labyrinth) dimension)
   (with-slots (room-size-max) stage
@@ -41,5 +39,6 @@
           height (ensure-stage-size stage height))))
 
 (defmethod build ((stage labyrinth))
-  (add-rooms stage)
-  (convolve stage :square-outline+origin #'filter-carvable #'carve-corridor))
+  (let ((*current-region* *current-region*))
+    (add-rooms stage)
+    (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)))

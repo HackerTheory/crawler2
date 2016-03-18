@@ -28,7 +28,7 @@
       (dotimes (i 2)
         (let ((cell (funcall dir neighborhood (1+ i))))
           (setf (cell-carved-p cell) t
-                (cell-region cell) (current-region stage))))
+                (cell-region cell) *current-region*)))
       (appendf cells (list frontier (funcall dir neighborhood 2))))
     cells))
 

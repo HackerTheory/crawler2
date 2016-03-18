@@ -32,7 +32,7 @@
     (loop :with affected-p
           :for x :from 1 :below (1- width)
           :do (loop :for y :from 1 :below (1- height)
-                    :for neighborhood = (funcall (layout layout) stage x y)
+                    :for neighborhood = (funcall layout stage x y)
                     :when (funcall filter stage neighborhood)
                       :do (setf affected-p (or affected-p (funcall effect stage neighborhood))))
           :finally (return affected-p))))
