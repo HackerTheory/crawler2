@@ -41,4 +41,5 @@
 (defmethod build ((stage labyrinth))
   (let ((*current-region* 0))
     (add-rooms stage)
-    (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)))
+    (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)
+    (convolve stage (layout :ortho) #'filter-connectable #'connect)))

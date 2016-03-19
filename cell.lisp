@@ -36,10 +36,22 @@
 
 (defun convolve (stage layout filter effect)
   (with-slots (width height) stage
-    (loop :with affected-p
+    (loop :with affectedp
           :for x :from 1 :below (1- width)
           :do (loop :for y :from 1 :below (1- height)
                     :for neighborhood = (funcall layout stage x y)
                     :when (funcall filter stage neighborhood)
-                      :do (setf affected-p (or affected-p (funcall effect stage neighborhood))))
-          :finally (return affected-p))))
+                      :do (let ((value (funcall effect stage neighborhood)))
+                            (setf affectedp (or affectedp value))))
+          :finally (return affectedp))))
+
+(defun collect-cells (stage layout filter)
+  (let ((cells))
+    (convolve
+     stage
+     layout
+     filter
+     (lambda (s n)
+       (declare (ignore s))
+       (push (origin n) cells)))
+    cells))
