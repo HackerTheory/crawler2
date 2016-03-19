@@ -44,8 +44,8 @@
           :for x :from x1 :below x2
           :do (loop :for y :from y1 :below y2
                     :for cell = (cell stage x y)
-                    :do (setf (cell-carved-p cell) t
-                              (cell-region cell) region))))
+                    :do (setf (carvedp cell) t
+                              (region-id cell) region))))
   (push room (rooms stage)))
 
 (defmethod make-room ((stage labyrinth))

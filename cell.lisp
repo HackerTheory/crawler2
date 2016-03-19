@@ -1,7 +1,14 @@
 (in-package :crawler2)
 
-(defstruct (cell (:constructor %make-cell))
-  x y carved-p region)
+(defclass cell ()
+  ((x :reader x
+      :initarg :x)
+   (y :reader y
+      :initarg :y)
+   (carvedp :accessor carvedp
+            :initform nil)
+   (region-id :accessor region-id
+              :initform nil)))
 
 (defmethod print-object ((o cell) stream)
   (with-slots (x y) o
@@ -24,8 +31,8 @@
   (let ((z (or buffer (next-buffer stage))))
     (setf (aref (grid stage) x y z) value)))
 
-(defmethod make-cell (stage x y buffer)
-  (setf (cell stage x y :buffer buffer) (%make-cell :x x :y y)))
+(defmethod make-cell :around (stage x y buffer)
+  (setf (cell stage x y :buffer buffer) (call-next-method)))
 
 (defun convolve (stage layout filter effect)
   (with-slots (width height) stage

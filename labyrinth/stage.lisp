@@ -39,6 +39,6 @@
           height (ensure-stage-size stage height))))
 
 (defmethod build ((stage labyrinth))
-  (let ((*current-region* *current-region*))
+  (let ((*current-region* 0))
     (add-rooms stage)
     (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)))

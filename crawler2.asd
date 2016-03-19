@@ -17,6 +17,8 @@
    (:module "labyrinth"
     :components
     ((:file "stage")
+     (:file "cell")
      (:file "region")
+     (:file "connector")
      (:file "room")
      (:file "corridor")))))
