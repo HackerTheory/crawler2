@@ -28,13 +28,28 @@
       (dotimes (i 2)
         (let ((cell (funcall dir neighborhood (1+ i))))
           (setf (carvedp cell) t
-                (region-id cell) *current-region*)))
+                (region-id cell) (current-region stage))))
       (appendf cells (list frontier (funcall dir neighborhood 2))))
     cells))
 
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
+  (setf (region-id (origin neighborhood)) (make-region stage))
   (loop :with cells = (list (origin neighborhood))
         :while cells
         :for cell = (pick-cell stage cells)
         :do (deletef cells cell)
             (setf cells (carve-cell stage cell cells))))
+
+(defmethod filter-dead-end ((stage labyrinth) neighborhood)
+  (let ((dirs (remove-if #'identity (nmap neighborhood #'carvedp))))
+    (and (carvedp (origin neighborhood))
+         (>= (length dirs) 3))))
+
+(defmethod erode-dead-end ((stage labyrinth) neighborhood)
+  (with-slots (carvedp region-id) (origin neighborhood)
+    (setf carvedp nil
+          region-id nil)
+    (when-let* ((dir (first (remove nil (nmap neighborhood (lambda (x) (when (carvedp x) x))))))
+                (nh (funcall (layout :ortho) stage (cell-x dir) (cell-y dir))))
+      (when (filter-dead-end stage nh)
+        nh))))

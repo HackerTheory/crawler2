@@ -15,6 +15,8 @@
                        :initform 0)
    (rooms :accessor rooms
           :initform nil)
+   (current-region :accessor current-region
+                   :initform 0)
    (regions :accessor regions
             :initform (make-hash-table))))
 
@@ -39,7 +41,8 @@
           height (ensure-stage-size stage height))))
 
 (defmethod build ((stage labyrinth))
-  (let ((*current-region* 0))
-    (add-rooms stage)
-    (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)
-    (convolve stage (layout :ortho) #'filter-connectable #'connect)))
+  (add-rooms stage)
+  (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)
+  (convolve stage (layout :ortho) #'filter-connectable #'connect)
+  (create-junctions stage)
+  (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end))

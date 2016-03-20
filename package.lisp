@@ -11,6 +11,7 @@
            #:height
            #:grid
            #:cell
-           #:carvedp))
+           #:carvedp
+           #:region-id))
 
 (in-package :crawler2)

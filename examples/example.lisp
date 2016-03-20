@@ -19,9 +19,10 @@
           (1- *cell-size*))))
 
 (defmethod select-color (x y)
-  (let ((cell (cell *stage* x y)))
+  (with-slots (carvedp region-id) (cell *stage* x y)
     (cond
-      ((carvedp cell) (gray 1)))))
+      (region-id (sketch::hash-color region-id))
+      (carvedp (gray 1)))))
 
 (defmethod mousebutton-event :after (window state ts button x y)
   (when (and (eq state :MOUSEBUTTONUP)

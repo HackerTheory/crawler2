@@ -1,9 +1,9 @@
 (in-package :crawler2)
 
 (defclass cell ()
-  ((x :reader x
+  ((x :reader cell-x
       :initarg :x)
-   (y :reader y
+   (y :reader cell-y
       :initarg :y)
    (carvedp :accessor carvedp
             :initform nil)
@@ -53,5 +53,14 @@
      filter
      (lambda (s n)
        (declare (ignore s))
-       (push (origin n) cells)))
+       (push n cells)))
     cells))
+
+(defun process-cells (stage layout filter processor)
+  (loop :with cells = (collect-cells stage layout filter)
+        :while cells
+        :do (loop :with neighborhood = (pop cells)
+                  :while (funcall filter stage neighborhood)
+                  :for new = (funcall processor stage neighborhood)
+                  :when new
+                    :do (push new cells))))
