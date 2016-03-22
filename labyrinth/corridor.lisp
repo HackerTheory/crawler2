@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
 (defmethod filter-carvable ((stage labyrinth) neighborhood)
-  (every #'null (nmap neighborhood #'carvedp)))
+  (every #'null (nmap neighborhood #'carvedp :max 1)))
 
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (clamp (corridor-windiness stage) 0 1))
@@ -26,9 +26,9 @@
     (when-let* ((neighborhood (funcall (layout :ortho :maximum 2) stage x y))
                 (dir (choose-uncarved stage neighborhood)))
       (dotimes (i 2)
-        (let ((cell (funcall dir neighborhood (1+ i))))
-          (setf (carvedp cell) t
-                (region-id cell) (current-region stage))))
+        (with-slots (carvedp region-id) (funcall dir neighborhood (1+ i))
+          (setf carvedp t
+                region-id (current-region stage))))
       (appendf cells (list frontier (funcall dir neighborhood 2))))
     cells))
 

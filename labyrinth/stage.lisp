@@ -42,7 +42,7 @@
 
 (defmethod build ((stage labyrinth))
   (add-rooms stage)
-  (convolve stage (layout :square-outline+origin) #'filter-carvable #'carve-corridor)
+  (convolve stage (layout :square-outline+origin :maximum 2) #'filter-carvable #'carve-corridor)
   (convolve stage (layout :ortho) #'filter-connectable #'connect)
   (create-junctions stage)
   (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end))

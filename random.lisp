@@ -9,6 +9,9 @@
              (get-internal-real-time))))
    (expt 2 48)))
 
+(defmethod set-seed ((stage labyrinth))
+  (setf (random-seed *random-generator*) (seed stage)))
+
 (defmethod rng ((method (eql 'elt)) &key list)
   (random-element *random-generator* list))
 

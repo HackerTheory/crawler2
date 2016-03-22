@@ -10,7 +10,10 @@
    (buffers :reader buffers
             :initform (vector 0))
    (grid :accessor grid
-         :initarg :grid)))
+         :initarg :grid)
+   (seed :reader seed
+         :initarg :seed
+         :initform (make-seed))))
 
 (defmethod ensure-dimensions (stage)
   (with-slots (width height) stage
@@ -21,6 +24,8 @@
 
 (defmethod make-stage (stage-type &rest attrs)
   (let ((stage (apply #'make-instance stage-type attrs)))
+    (format t "Random seed: ~A~%" (seed stage))
+    (set-seed stage)
     (ensure-dimensions stage)
     (make-buffers stage)
     (build stage)
