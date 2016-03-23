@@ -164,8 +164,8 @@
     (and (nset-square neighborhood x y)
          (not (and (> x (- minimum))
                    (> y (- minimum))
-                   (< x minimum)
-                   (< y minimum))))))
+                   (< x maximum)
+                   (< y maximum))))))
 
 (defun nmap-square-outline (neighborhood func &key min max)
   (let ((results)
