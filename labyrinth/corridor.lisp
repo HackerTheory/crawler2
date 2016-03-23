@@ -35,12 +35,12 @@
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
   (with-accessors ((origin origin)) neighborhood
     (setf (region-id origin) (make-region stage)
-          (carvedp origin) t))
-  (loop :with cells = (list (origin neighborhood))
-        :while cells
-        :for cell = (pick-cell stage cells)
-        :do (deletef cells cell)
-            (setf cells (carve-cell stage cell cells))))
+          (carvedp origin) t)
+    (loop :with cells = (list origin)
+          :while cells
+          :for cell = (pick-cell stage cells)
+          :do (deletef cells cell)
+              (setf cells (carve-cell stage cell cells)))))
 
 (defmethod filter-dead-end ((stage labyrinth) neighborhood)
   (let ((dirs (remove-if #'identity (nmap neighborhood #'carvedp))))
