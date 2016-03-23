@@ -6,7 +6,7 @@
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (clamp (corridor-windiness stage) 0 1))
       (rng 'elt :list cells)
-      (first (last cells))))
+      (first cells)))
 
 (defmethod choose-uncarved ((stage labyrinth) neighborhood)
   (with-slots (width height) (stage neighborhood)
@@ -34,6 +34,7 @@
 
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
   (setf (region-id (origin neighborhood)) (make-region stage))
+  (setf (carvedp (origin neighborhood)) t)
   (loop :with cells = (list (origin neighborhood))
         :while cells
         :for cell = (pick-cell stage cells)
