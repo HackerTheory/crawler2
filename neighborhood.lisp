@@ -97,9 +97,9 @@
              (and (zerop x) (not (zerop y)))
              (and (not (zerop x)) (zerop y))))))
 
-(defun nmap-ortho (neighborhood func &key max)
+(defun nmap-ortho (neighborhood func)
   (let ((results)
-        (max (or max (maximum (extent neighborhood)))))
+        (max (maximum (extent neighborhood))))
     (loop :for y :from (- max) :to max
           :for cell = (nref neighborhood 0 y)
           :when cell
@@ -120,9 +120,9 @@
          (<= (abs y) maximum)
          (= (abs x) (abs y)))))
 
-(defun nmap-diag (neighborhood func &key max)
+(defun nmap-diag (neighborhood func)
   (let ((results)
-        (max (or max (maximum (extent neighborhood)))))
+        (max (maximum (extent neighborhood))))
     (loop :for x :from (- max) :to max
           :for cell = (nref neighborhood x (- x))
           :when cell
@@ -156,8 +156,8 @@
 (defun nset-square (neighborhood x y)
   (nset-default neighborhood x y))
 
-(defun nmap-square (neighborhood func &key max)
-  (nmap-default neighborhood func max))
+(defun nmap-square (neighborhood func)
+  (nmap-default neighborhood func))
 
 (defun nset-square-outline (neighborhood x y)
   (with-slots (minimum maximum) (extent neighborhood)
@@ -167,10 +167,10 @@
                    (< x maximum)
                    (< y maximum))))))
 
-(defun nmap-square-outline (neighborhood func &key min max)
+(defun nmap-square-outline (neighborhood func)
   (let ((results)
-        (min (or min (minimum (extent neighborhood))))
-        (max (or max (maximum (extent neighborhood)))))
+        (min (minimum (extent neighborhood)))
+        (max (maximum (extent neighborhood))))
     (loop :for y :from min :to max
           :do (loop :for x :from (- max) :to max
                     :for cell = (nref neighborhood x y)
@@ -198,9 +198,9 @@
       (and (zerop x)
            (zerop y))))
 
-(defun nmap-square-outline+origin (neighborhood func &key min max)
+(defun nmap-square-outline+origin (neighborhood func)
   (cons (funcall func (origin neighborhood))
-        (nmap-square-outline neighborhood func :min min :max max)))
+        (nmap-square-outline neighborhood func)))
 
 (defun nset-default (neighborhood x y)
   (with-slots (maximum) (extent neighborhood)
@@ -209,9 +209,9 @@
          (<= x maximum)
          (<= y maximum))))
 
-(defun nmap-default (neighborhood func &key max)
+(defun nmap-default (neighborhood func)
   (let ((results)
-        (max (or max (maximum (extent neighborhood)))))
+        (max (maximum (extent neighborhood))))
     (loop :for y :from max :downto (- max)
           :do (loop :for x :from (- max) :to max
                     :for cell = (nref neighborhood x y)
