@@ -22,7 +22,6 @@
   (random-range-inclusive *random-generator* min max))
 
 (defmethod rng ((method (eql 'odd)) &key (min 1) (max 3))
-  (when (evenp min) (decf min))
   (let ((num (rng 'inc :min min :max max)))
     (if (evenp num) (decf num) num)))
 

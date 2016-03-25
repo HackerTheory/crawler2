@@ -4,7 +4,7 @@
   (all-nil (nmap neighborhood #'carvedp)))
 
 (defmethod pick-cell ((stage labyrinth) cells)
-  (if (> (rng 'inc) (clamp (corridor-windiness stage) 0 1))
+  (if (> (rng 'inc) (corridor-windiness stage))
       (rng 'elt :list cells)
       (first cells)))
 

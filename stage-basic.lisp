@@ -13,12 +13,27 @@
          :initarg :grid)
    (seed :reader seed
          :initarg :seed
-         :initform (make-seed))))
+         :initform (make-seed))
+   (regions :accessor regions
+            :initform (make-hash-table))
+   (current-region :accessor current-region
+                   :initform 0)))
+
+(defmethod make-grid (stage)
+  (with-slots (width height grid) stage
+    (setf grid (make-array `(,width ,height)))
+    (dotimes (x width)
+      (dotimes (y height)
+        (make-cell stage x y)))))
 
 (defmethod ensure-dimensions (stage)
   (with-slots (width height) stage
     (setf width (max 10 width)
           height (max 10 height))))
+
+(defmethod validate :around (stage)
+  (call-next-method)
+  (ensure-dimensions stage))
 
 (defmethod build (stage))
 
@@ -26,7 +41,7 @@
   (let ((stage (apply #'make-instance stage-type attrs)))
     (format t "Random seed: ~A~%" (seed stage))
     (set-seed stage)
-    (ensure-dimensions stage)
-    (make-buffers stage)
+    (validate stage)
+    (make-grid stage)
     (build stage)
     stage))

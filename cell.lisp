@@ -15,6 +15,9 @@
     (print-unreadable-object (o stream)
       (format stream "X:~S, Y:~S" x y))))
 
+(defmethod make-cell :around (stage x y &key)
+  (setf (cell stage x y) (call-next-method)))
+
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
     (when (and (not (minusp x))
@@ -23,16 +26,11 @@
                (< y height))
       (cell stage x y))))
 
-(defmethod cell (stage x y &key buffer)
-  (let ((z (or buffer (current-buffer stage))))
-    (aref (grid stage) x y z)))
+(defmethod cell (stage x y &key)
+  (aref (grid stage) x y))
 
-(defmethod (setf cell) (value stage x y &key buffer)
-  (let ((z (or buffer (next-buffer stage))))
-    (setf (aref (grid stage) x y z) value)))
-
-(defmethod make-cell :around (stage x y buffer)
-  (setf (cell stage x y :buffer buffer) (call-next-method)))
+(defmethod (setf cell) (value stage x y &key)
+  (setf (aref (grid stage) x y) value))
 
 (defun convolve (stage layout filter effect)
   (with-slots (width height) stage

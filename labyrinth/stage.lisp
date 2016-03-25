@@ -14,31 +14,28 @@
                        :initarg :corridor-windiness
                        :initform 0)
    (rooms :accessor rooms
-          :initform nil)
-   (current-region :accessor current-region
-                   :initform 0)
-   (regions :accessor regions
-            :initform (make-hash-table))))
-
-(defmethod ensure-stage-size ((stage labyrinth) dimension)
-  (with-slots (room-size-max) stage
-      (let ((size (max (+ (* room-size-max 2) 3) dimension)))
-        (if (evenp size)
-            (incf size)
-            size))))
-
-(defmethod ensure-room-size ((stage labyrinth) dimension &key (min 3) (max 99))
-  (let ((size (clamp dimension min max)))
-    (if (evenp size)
-        (incf size)
-        size)))
+          :initform nil)))
 
 (defmethod ensure-dimensions ((stage labyrinth))
   (with-slots (width height room-size-min room-size-max) stage
-    (setf room-size-min (ensure-room-size stage room-size-min)
-          room-size-max (ensure-room-size stage room-size-max :min room-size-min)
-          width (ensure-stage-size stage width)
-          height (ensure-stage-size stage height))))
+    (flet ((ensure (dimension)
+             (let ((size (max (+ (* room-size-max 2) 3) dimension)))
+               (if (evenp size)
+                   (incf size)
+                   size))))
+      (setf width (ensure width)
+            height (ensure height)))))
+
+(defmethod validate ((stage labyrinth))
+  (with-slots (room-size-min room-size-max room-density corridor-windiness) stage
+    (setf room-size-min (clamp room-size-min 3 99)
+          room-size-max (clamp room-size-max room-size-min 99)
+          room-density (clamp room-density 0.1 1.0)
+          corridor-windiness (clamp corridor-windiness 0.0 1.0))
+    (when (evenp room-size-min)
+      (incf room-size-min))
+    (when (evenp room-size-max)
+      (incf room-size-max))))
 
 (defmethod build ((stage labyrinth))
   (add-rooms stage)

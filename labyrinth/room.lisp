@@ -24,8 +24,7 @@
     (let* ((min (expt room-size-min 2))
            (max (expt room-size-max 2))
            (average (/ (abs (- max min)) 2)))
-      (floor (* (/ (* width height) average)
-                (clamp room-density 0.1 1))))))
+      (floor (* (/ (* width height) average) room-density)))))
 
 (defmethod intersectsp ((source labyrinth-room) (target labyrinth-room))
   (and (> (x2 source) (x1 target))
