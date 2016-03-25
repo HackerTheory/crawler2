@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
 (defmethod filter-carvable ((stage labyrinth) neighborhood)
-  (every #'null (nmap neighborhood #'carvedp)))
+  (all-nil (nmap neighborhood #'carvedp)))
 
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (clamp (corridor-windiness stage) 0 1))
@@ -13,9 +13,11 @@
     (rng 'elt :list
          (remove-if
           (lambda (dir)
+            ;; TODO: rewrite to use nref with the neighborhood, then the
+            ;; clipping checks can go away.
             (with-slots (x y) (funcall dir neighborhood)
-              (or (zerop x)
-                  (zerop y)
+              (or (<= x 1)
+                  (<= y 1)
                   (>= x (1- width))
                   (>= y (1- height))
                   (carvedp (funcall dir neighborhood 2)))))
@@ -23,7 +25,7 @@
 
 (defmethod carve-cell ((stage labyrinth) frontier cells)
   (with-slots (x y) frontier
-    (when-let* ((neighborhood (funcall (layout :ortho :maximum 2) stage x y))
+    (when-let* ((neighborhood (nh-realize (layout :ortho :maximum 2) stage x y))
                 (dir (choose-uncarved stage neighborhood)))
       (dotimes (i 2)
         (with-slots (carvedp region-id) (funcall dir neighborhood (1+ i))
@@ -53,6 +55,7 @@
     (setf carvedp nil
           region-id nil)
     (when-let* ((dir (first (remove nil (nmap neighborhood (lambda (x) (when (carvedp x) x))))))
-                (nh (funcall (layout :ortho) stage (cell-x dir) (cell-y dir))))
+                (nh (nh-realize
+                     (layout :ortho) stage (cell-x dir) (cell-y dir))))
       (when (filter-dead-end stage nh)
         nh))))
