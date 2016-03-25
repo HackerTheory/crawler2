@@ -29,6 +29,7 @@
         (with-slots (carvedp region-id) (funcall dir neighborhood (1+ i))
           (setf carvedp t
                 region-id (current-region stage))))
+      (push frontier cells)
       (push (funcall dir neighborhood 2) cells))
     cells))
 
