@@ -18,15 +18,13 @@
 (defmethod make-cell :around (stage x y &key)
   (setf (cell stage x y) (call-next-method)))
 
-(defmethod valid-cell-p (stage x y &key (must-clip-p t))
+(defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
-    (when (and must-clip-p ;; if NIL, then this is a fast no clip path.
-               (or (< x 0)
-                   (< y 0)
-                   (>= x width)
-                   (>= y height)))
-      (return-from valid-cell-p NIL))
-    (cell stage x y)))
+    (when (and (not (minusp x))
+               (not (minusp y))
+               (< x width)
+               (< y height))
+      (cell stage x y))))
 
 (defmethod cell (stage x y &key)
   (aref (grid stage) x y))
