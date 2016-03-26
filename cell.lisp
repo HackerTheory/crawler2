@@ -27,6 +27,7 @@
       (cell stage x y))))
 
 (defmethod cell (stage x y &key)
+  (incf *cell-calls*)
   (aref (grid stage) x y))
 
 (defmethod (setf cell) (value stage x y &key)
@@ -62,3 +63,10 @@
                   :for new = (funcall processor stage neighborhood)
                   :when new
                     :do (push new cells))))
+
+(defmacro profile-cell-calls (msg &body body)
+  (let ((result (gensym)))
+    `(let ((*cell-calls* 0))
+       (let ((,result (progn ,@body)))
+         (format t "~A: Cells looked up: ~A~%" ,msg *cell-calls*)
+         ,result))))

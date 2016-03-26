@@ -15,3 +15,5 @@
            #:region-id))
 
 (in-package :crawler2)
+
+(defparameter *cell-calls* 0)

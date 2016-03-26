@@ -38,8 +38,14 @@
       (incf room-size-max))))
 
 (defmethod build ((stage labyrinth))
-  (add-rooms stage)
-  (convolve stage (layout :square) #'filter-carvable #'carve-corridor)
-  (convolve stage (layout :ortho) #'filter-connectable #'connect)
-  (create-junctions stage)
-  (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end))
+  (format t "Creating labyrinth.~%")
+  (profile-cell-calls "  Adding Rooms"
+    (add-rooms stage))
+  (profile-cell-calls "  Carving"
+      (convolve stage (layout :square) #'filter-carvable #'carve-corridor))
+  (profile-cell-calls "  Connecting Rooms"
+    (convolve stage (layout :ortho) #'filter-connectable #'connect))
+  (profile-cell-calls "  Creating Junctions"
+    (create-junctions stage))
+  (profile-cell-calls "  Dead End Erosion"
+    (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end)))

@@ -9,30 +9,27 @@
       (first cells)))
 
 (defmethod choose-uncarved ((stage labyrinth) neighborhood)
-  (with-slots (width height) (stage neighborhood)
-    (rng 'elt :list
-         (remove-if
-          (lambda (dir)
-            ;; TODO: rewrite to use nref with the neighborhood, then the
-            ;; clipping checks can go away.
-            (with-slots (x y) (funcall dir neighborhood)
-              (or (zerop x)
-                  (zerop y)
-                  (>= x (1- width))
-                  (>= y (1- height))
-                  (carvedp (funcall dir neighborhood 2)))))
-          '(n s e w)))))
+  (let ((results))
+    (dolist (dir '(n s e w))
+      (let ((c1 (funcall dir neighborhood)))
+        (when (and (> (cell-x c1) 0)
+                   (> (cell-y c1) 0)
+                   (< (cell-x c1) (1- (width stage)))
+                   (< (cell-y c1) (1- (height stage))))
+          (let ((c2 (funcall dir neighborhood 2)))
+            (unless (carvedp c2)
+              (push (list c1 c2) results))))))
+    (rng 'elt :list results)))
 
 (defmethod carve-cell ((stage labyrinth) frontier cells)
   (with-slots (x y) frontier
     (let ((neighborhood (nh-realize (layout :ortho :maximum 2) stage x y)))
-      (if-let ((dir (choose-uncarved stage neighborhood)))
-          (loop :for i :from 1 :to 2
-                :for cell = (funcall dir neighborhood i)
-                :do (setf (carvedp cell) t
-                          (region-id cell) (current-region stage))
-                :finally (push cell cells))
-          (deletef cells frontier)))
+      (if-let ((choice (choose-uncarved stage neighborhood)))
+        (loop :for cell :in choice
+              :do (setf (carvedp cell) t
+                        (region-id cell) (current-region stage))
+              :finally (push cell cells))
+        (deletef cells frontier)))
     cells))
 
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
