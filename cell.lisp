@@ -33,6 +33,14 @@
 (defmethod (setf cell) (value stage x y &key)
   (setf (aref (grid stage) x y) value))
 
+(defmethod carve (stage cell &optional (region-id (current-region stage)))
+  (setf (carvedp cell) t
+        (region-id cell) region-id))
+
+(defmethod uncarve (stage cell)
+  (setf (carvedp cell) nil
+        (region-id cell) nil))
+
 (defun convolve (stage layout filter effect)
   (with-slots (width height) stage
     (loop :with affectedp

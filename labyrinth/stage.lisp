@@ -41,11 +41,11 @@
   (format t "Creating labyrinth.~%")
   (profile-cell-calls "  Adding Rooms"
     (add-rooms stage))
-  (profile-cell-calls "  Carving"
+  (profile-cell-calls "  Carving Corridors"
       (convolve stage (layout :square) #'filter-carvable #'carve-corridor))
   (profile-cell-calls "  Connecting Rooms"
     (convolve stage (layout :ortho) #'filter-connectable #'connect))
   (profile-cell-calls "  Creating Junctions"
     (create-junctions stage))
-  (profile-cell-calls "  Dead End Erosion"
+  (profile-cell-calls "  Eroding Dead Ends"
     (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end)))

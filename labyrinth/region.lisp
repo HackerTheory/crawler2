@@ -27,5 +27,4 @@
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p cell)
-    (setf (carvedp cell) t
-          (region-id cell) nil)))
+    (carve stage cell nil)))
