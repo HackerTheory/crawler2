@@ -16,8 +16,8 @@
             ;; TODO: rewrite to use nref with the neighborhood, then the
             ;; clipping checks can go away.
             (with-slots (x y) (funcall dir neighborhood)
-              (or (<= x 1)
-                  (<= y 1)
+              (or (zerop x)
+                  (zerop y)
                   (>= x (1- width))
                   (>= y (1- height))
                   (carvedp (funcall dir neighborhood 2)))))
@@ -25,25 +25,24 @@
 
 (defmethod carve-cell ((stage labyrinth) frontier cells)
   (with-slots (x y) frontier
-    (when-let* ((neighborhood (nh-realize (layout :ortho :maximum 2) stage x y))
-                (dir (choose-uncarved stage neighborhood)))
-      (dotimes (i 2)
-        (with-slots (carvedp region-id) (funcall dir neighborhood (1+ i))
-          (setf carvedp t
-                region-id (current-region stage))))
-      (push frontier cells)
-      (push (funcall dir neighborhood 2) cells))
+    (let ((neighborhood (nh-realize (layout :ortho :maximum 2) stage x y)))
+      (if-let ((dir (choose-uncarved stage neighborhood)))
+          (loop :for i :from 1 :to 2
+                :for cell = (funcall dir neighborhood i)
+                :do (setf (carvedp cell) t
+                          (region-id cell) (current-region stage))
+                :finally (push cell cells))
+          (deletef cells frontier)))
     cells))
 
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
-  (with-accessors ((origin origin)) neighborhood
+  (let ((origin (origin neighborhood)))
     (setf (region-id origin) (make-region stage)
           (carvedp origin) t)
     (loop :with cells = (list origin)
           :while cells
           :for cell = (pick-cell stage cells)
-          :do (deletef cells cell)
-              (setf cells (carve-cell stage cell cells)))))
+          :do (setf cells (carve-cell stage cell cells)))))
 
 (defmethod filter-dead-end ((stage labyrinth) neighborhood)
   (let ((dirs (remove-if #'identity (nmap neighborhood #'carvedp))))
