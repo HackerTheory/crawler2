@@ -7,7 +7,8 @@
   y
   (extent (make-extent))
   (set-fn #'nset-default)
-  (map-fn #'nmap-default))
+  (map-fn #'nmap-default)
+  (must-clip-p t))
 
 (defstruct (extent (:conc-name nil))
   (minimum 0)
@@ -33,7 +34,8 @@
   (with-slots (stage) neighborhood
     (when (nsetp neighborhood x y)
       (multiple-value-bind (stage-x stage-y) (stage-coords neighborhood x y)
-        (valid-cell-p stage stage-x stage-y)))))
+        (valid-cell-p stage stage-x stage-y
+                      :must-clip-p (must-clip-p neighborhood))))))
 
 (defun origin (neighborhood)
   (nref neighborhood 0 0))
@@ -64,12 +66,23 @@
 
 (defun make-neighborhood (set-fn map-fn extent-args)
   (lambda (stage x y)
-    (%make-neighborhood :stage stage
-                        :x x
-                        :y y
-                        :extent (apply #'make-extent extent-args)
-                        :set-fn set-fn
-                        :map-fn map-fn)))
+    (with-slots (width height) stage
+      (let ((extent (apply #'make-extent extent-args)))
+        (with-slots (maximum) extent
+          ;; Precompute if this neighborhood requires clipping of the NH coords
+          ;; while transforming them to the stage coords.
+          (let ((must-clip-p (or (< (- x maximum) 0)
+                                 (< (- y maximum) 0)
+                                 (>= (+ x maximum) width)
+                                 (>= (+ y maximum) height))))
+
+            (%make-neighborhood :stage stage
+                                :x x
+                                :y y
+                                :extent extent
+                                :set-fn set-fn
+                                :map-fn map-fn
+                                :must-clip-p must-clip-p)))))))
 
 (defmethod layout ((name (eql :ortho)) &rest extent-args)
   (make-neighborhood #'nset-ortho #'nmap-ortho extent-args))
