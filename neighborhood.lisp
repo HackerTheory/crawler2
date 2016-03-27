@@ -233,7 +233,7 @@
 (defmacro nmap-early-exit-reduction (neighborhood func
                                      &key (test 'when)
                                        (reduction 'none)
-                                       (return-val nil))
+                                       (early-exit-return-val nil))
   (let ((block-name (gensym))
         (cell (gensym)))
     `(block ,block-name
@@ -241,7 +241,7 @@
         (nmap ,neighborhood
               (lambda (,cell)
                 (,test (funcall ,func ,cell)
-                       (return-from ,block-name ,return-val))))))))
+                       (return-from ,block-name ,early-exit-return-val))))))))
 
 
 
