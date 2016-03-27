@@ -230,6 +230,18 @@
               :do (push (funcall func cell) results)))
     results))
 
+(defmacro nmap-early-exit-reduction (neighborhood func
+                                     &key (test 'when)
+                                       (reduction 'none)
+                                       (early-exit-return-val nil))
+  (let ((block-name (gensym))
+        (cell (gensym)))
+    `(block ,block-name
+       (,reduction
+        (nmap ,neighborhood
+              (lambda (,cell)
+                (,test (funcall ,func ,cell)
+                       (return-from ,block-name ,early-exit-return-val))))))))
 
 
 
