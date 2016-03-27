@@ -27,8 +27,10 @@
 (defmethod adjacent-junction-p ((stage labyrinth) cell)
   (with-slots (x y) cell
     (let ((neighborhood (nh-realize (layout :ortho) stage x y)))
-      ;; TODO: add cell features and check that, rather than carved/not a region
-      (any (nmap neighborhood (lambda (x) (featuresp x :junction)))))))
+      (flet ((bail-junction (x)
+               (when (featuresp x :junction)
+                 (return-from adjacent-junction-p t))))
+        (nfilter neighborhood #'bail-junction)))))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)

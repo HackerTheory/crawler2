@@ -10,7 +10,6 @@
   :serial t
   :components
   ((:file "package")
-   (:file "util")
    (:file "random")
    (:file "cell")
    (:file "neighborhood")
