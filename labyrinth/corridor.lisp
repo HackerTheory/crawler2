@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
 (defmethod filter-carvable ((stage labyrinth) neighborhood)
-  (all-nil (nmap neighborhood #'carvedp)))
+  (none (nmap neighborhood #'carvedp)))
 
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (corridor-windiness stage))
@@ -46,8 +46,5 @@
 
 (defmethod erode-dead-end ((stage labyrinth) neighborhood)
   (uncarve stage (origin neighborhood))
-  (when-let* ((dir (first (remove nil (nmap neighborhood (lambda (x) (when (carvedp x) x))))))
-              (nh (nh-realize
-                   (layout :ortho) stage (cell-x dir) (cell-y dir))))
-    (when (filter-dead-end stage nh)
-      nh)))
+  (when-let ((dir (first (remove nil (nmap neighborhood (lambda (x) (when (carvedp x) x)))))))
+    (nh-realize (layout :ortho) stage (cell-x dir) (cell-y dir))))

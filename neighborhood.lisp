@@ -13,12 +13,6 @@
   (minimum 0)
   (maximum 1))
 
-(defun all-t (&rest args)
-  (apply #'every #'identity args))
-
-(defun all-nil (&rest args)
-  (apply #'every #'null args))
-
 (defun stage-coords (neighborhood nx ny)
   (with-slots (x y) neighborhood
     (values (+ x nx) (+ y ny))))

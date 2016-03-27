@@ -21,10 +21,19 @@
         :for target = (first (remove region-id (adjacent-regions source)))
         :do (make-junction stage source)
             (remove-extra-connectors stage region-id target)
-            (move-connectors stage target region-id)))
+            (move-connectors stage target region-id))
+  (convolve stage (layout :ortho) #'filter-connectable #'make-extra-junctions))
 
-(defmethod adjacent-junction-p (cell))
+(defmethod adjacent-junction-p ((stage labyrinth) cell)
+  (with-slots (x y) cell
+    (let ((neighborhood (nh-realize (layout :ortho) stage x y)))
+      ;; TODO: add cell features and check that, rather than carved/not a region
+      (some #'identity (nmap neighborhood (lambda (x) (and (carvedp x) (not (region-id x)))))))))
 
 (defmethod make-junction ((stage labyrinth) cell)
-  (unless (adjacent-junction-p cell)
+  (unless (adjacent-junction-p stage cell)
     (carve stage cell nil)))
+
+(defmethod make-extra-junctions ((stage labyrinth) neighborhood)
+  (when (< (rng 'inc) (junction-rate stage))
+    (make-junction stage (origin neighborhood))))
