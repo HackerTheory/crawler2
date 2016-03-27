@@ -1,10 +1,8 @@
 (in-package :crawler2)
 
+
 (defmethod filter-carvable ((stage labyrinth) neighborhood)
-  (flet ((bail-uncarvable (x)
-           (when (carvedp x)
-             (return-from filter-carvable nil))))
-    (none (nmap neighborhood #'bail-uncarvable))))
+  (nmap-early-exit-reduction neighborhood #'carvedp))
 
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (corridor-windiness stage))
