@@ -54,4 +54,4 @@
   (profile-cell-calls "  Eroding Dead Ends"
     (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end))
   (profile-cell-calls "  Adding Staircases"
-    (make-upstairs stage)))
+    (create-stairs stage)))

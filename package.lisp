@@ -3,7 +3,8 @@
 (defpackage #:crawler2
   (:use #:cl
         #:alexandria
-        #:cl-variates)
+        #:cl-variates
+        #:cl-speedy-queue)
   (:export #:stage
            #:labyrinth
            #:make-stage
