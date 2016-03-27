@@ -26,14 +26,14 @@
     (let ((neighborhood (nh-realize (layout :ortho :maximum 2) stage x y)))
       (if-let ((choice (choose-uncarved stage neighborhood)))
         (loop :for cell :in choice
-              :do (carve stage cell)
+              :do (carve stage cell :feature :corridor)
               :finally (push cell cells))
         (deletef cells origin)))
     cells))
 
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
   (let ((origin (origin neighborhood)))
-    (carve stage origin (make-region stage))
+    (carve stage origin :region (make-region stage) :feature :corridor)
     (loop :with cells = (list origin)
           :while cells
           :for cell = (pick-cell stage cells)

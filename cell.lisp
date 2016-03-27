@@ -8,7 +8,9 @@
    (carvedp :accessor carvedp
             :initform nil)
    (region-id :accessor region-id
-              :initform nil)))
+              :initform nil)
+   (features :accessor features
+             :initform '(:wall))))
 
 (defmethod print-object ((o cell) stream)
   (with-slots (x y) o
@@ -33,13 +35,25 @@
 (defmethod (setf cell) (value stage x y &key)
   (setf (aref (grid stage) x y) value))
 
-(defmethod carve (stage cell &optional (region-id (current-region stage)))
+(defmethod carve (stage cell &key (region (current-region stage)) feature)
   (setf (carvedp cell) t
-        (region-id cell) region-id))
+        (region-id cell) region)
+  (add-feature cell feature))
 
 (defmethod uncarve (stage cell)
   (setf (carvedp cell) nil
-        (region-id cell) nil))
+        (region-id cell) nil
+        (features cell) '(:wall)))
+
+(defmethod featuresp (cell &rest features)
+  (some (lambda (x) (member x features)) (features cell)))
+
+(defmethod remove-feature (cell feature)
+  (deletef (features cell) feature))
+
+(defmethod add-feature (cell feature)
+  (remove-feature cell :wall)
+  (pushnew feature (features cell)))
 
 (defun convolve (stage layout filter effect)
   (with-slots (width height) stage

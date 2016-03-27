@@ -28,11 +28,11 @@
   (with-slots (x y) cell
     (let ((neighborhood (nh-realize (layout :ortho) stage x y)))
       ;; TODO: add cell features and check that, rather than carved/not a region
-      (any (nmap neighborhood (lambda (x) (and (carvedp x) (not (region-id x)))))))))
+      (any (nmap neighborhood (lambda (x) (featuresp x :junction)))))))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
-    (carve stage cell nil)))
+    (carve stage cell :region nil :feature :junction)))
 
 (defmethod make-extra-junctions ((stage labyrinth) neighborhood)
   (when (< (rng 'inc) (junction-rate stage))
