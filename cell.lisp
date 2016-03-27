@@ -55,18 +55,18 @@
   (remove-feature cell :wall)
   (pushnew feature (features cell)))
 
-(defun convolve (stage layout filter effect)
+(defun convolve (stage layout filter effect &key (x1 1) (x2 -1) (y1 1) (y2 -1))
   (with-slots (width height) stage
     (loop :with affectedp
-          :for x :from 1 :below (1- width)
-          :do (loop :for y :from 1 :below (1- height)
+          :for x :from x1 :below (+ width x2)
+          :do (loop :for y :from y1 :below (+ height y2)
                     :for neighborhood = (funcall layout stage x y)
                     :when (funcall filter stage neighborhood)
                       :do (let ((value (funcall effect stage neighborhood)))
                             (setf affectedp (or affectedp value))))
           :finally (return affectedp))))
 
-(defun collect-cells (stage layout filter)
+(defun collect-cells (stage layout filter &key (x1 1) (x2 -1) (y1 1) (y2 -1))
   (let ((cells))
     (convolve
      stage
@@ -74,7 +74,11 @@
      filter
      (lambda (s n)
        (declare (ignore s))
-       (push n cells)))
+       (push n cells))
+     :x1 x1
+     :x2 x2
+     :y1 y1
+     :y2 y2)
     cells))
 
 (defun process-cells (stage layout filter processor)

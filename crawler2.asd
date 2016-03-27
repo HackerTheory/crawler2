@@ -22,4 +22,5 @@
      (:file "region")
      (:file "connector")
      (:file "room")
-     (:file "corridor")))))
+     (:file "corridor")
+     (:file "stairs")))))
