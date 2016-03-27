@@ -5,3 +5,6 @@
 
 (defun none (&rest args)
   (apply #'every #'null args))
+
+(defun any (&rest args)
+  (apply #'some #'identity args))
