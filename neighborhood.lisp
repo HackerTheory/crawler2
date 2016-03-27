@@ -23,6 +23,9 @@
 (defun nsetp (neighborhood x y)
   (funcall (set-fn neighborhood) neighborhood x y))
 
+(defun nfilter (neighborhood filter)
+  (remove nil (nmap neighborhood (lambda (x) (when (funcall filter x) x)))))
+
 (defun nref (neighborhood x y)
   (with-slots (stage) neighborhood
     (when (nsetp neighborhood x y)
@@ -65,6 +68,10 @@
                         :set-fn set-fn
                         :map-fn map-fn)))
 
+(defun cell-nh (stage cell layout)
+  (with-slots (x y) cell
+    (funcall layout stage x y)))
+
 (defmethod layout ((name (eql :ortho)) &rest extent-args)
   (make-neighborhood #'nset-ortho #'nmap-ortho extent-args))
 
@@ -91,7 +98,6 @@
 
 (defun nh-realize (nh-generator stage x y)
   (funcall nh-generator stage x y))
-
 
 (defun nset-ortho (neighborhood x y)
   (with-slots (maximum) (extent neighborhood)

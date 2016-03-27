@@ -46,5 +46,5 @@
 
 (defmethod erode-dead-end ((stage labyrinth) neighborhood)
   (uncarve stage (origin neighborhood))
-  (when-let ((dir (first (remove nil (nmap neighborhood (lambda (x) (when (carvedp x) x)))))))
-    (nh-realize (layout :ortho) stage (cell-x dir) (cell-y dir))))
+  (when-let ((dir (first (nfilter neighborhood #'carvedp))))
+    (cell-nh stage dir (layout :ortho))))
