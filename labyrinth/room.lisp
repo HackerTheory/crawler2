@@ -43,7 +43,7 @@
           :for x :from x1 :below x2
           :do (loop :for y :from y1 :below y2
                     :for cell = (cell stage x y)
-                    :do (carve stage cell :region region :feature :room))))
+                    :do (carve stage cell :region-id region :feature :room))))
   (push room (rooms stage)))
 
 (defmethod make-room ((stage labyrinth))

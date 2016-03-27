@@ -36,7 +36,7 @@
 
 (defmethod carve-corridor ((stage labyrinth) neighborhood)
   (let ((origin (origin neighborhood)))
-    (carve stage origin :region (make-region stage) :feature :corridor)
+    (carve stage origin :region-id (make-region stage) :feature :corridor)
     (loop :with cells = (list origin)
           :while cells
           :for cell = (pick-cell stage cells)

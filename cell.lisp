@@ -35,15 +35,20 @@
 (defmethod (setf cell) (value stage x y &key)
   (setf (aref (grid stage) x y) value))
 
-(defmethod carve (stage cell &key (region (current-region stage)) feature)
+(defmethod carve (stage cell &key (region-id (current-region stage)) feature)
   (setf (carvedp cell) t
-        (region-id cell) region)
+        (region-id cell) region-id)
+  (when-let ((region (get-region stage region-id)))
+    (pushnew cell (cells region)))
   (add-feature cell feature))
 
 (defmethod uncarve (stage cell)
-  (setf (carvedp cell) nil
-        (region-id cell) nil
-        (features cell) '(:wall)))
+  (with-slots (carvedp region-id features) cell
+    (when-let ((region (get-region stage region-id)))
+      (deletef (cells region) cell))
+    (setf carvedp nil
+          region-id nil
+          features '(:wall))))
 
 (defmethod featuresp (cell &rest features)
   (some (lambda (x) (member x features)) (features cell)))

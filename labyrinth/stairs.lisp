@@ -26,15 +26,8 @@
     (setf (distance cell) 0)
     cell))
 
-(defmethod choose-downstairs ((stage labyrinth) region)
-  (rng 'elt :list
-       (mapcar
-        #'origin
-        (collect-cells
-         stage
-         (layout :square :maximum 0)
-         (lambda (s n) (and (staircase-suitable-p s n)
-                       (= (region-id (origin n)) region)))))))
+(defmethod choose-downstairs ((stage labyrinth) region-id)
+  (rng 'elt :list (cells (get-region stage region-id))))
 
 (defmethod make-downstairs ((stage labyrinth) source)
   (let ((queue (make-queue (* (width stage) (height stage))))

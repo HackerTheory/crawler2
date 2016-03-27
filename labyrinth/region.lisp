@@ -2,7 +2,7 @@
 
 (defstruct (region (:conc-name nil)
                    (:constructor %make-region (id)))
-  id connectors)
+  id connectors cells)
 
 (defmethod make-region ((stage labyrinth))
   (with-slots (current-region regions) stage
@@ -34,7 +34,7 @@
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
-    (carve stage cell :region nil :feature :junction)))
+    (carve stage cell :region-id nil :feature :junction)))
 
 (defmethod make-extra-junctions ((stage labyrinth) neighborhood)
   (when (< (rng 'inc) (junction-rate stage))
