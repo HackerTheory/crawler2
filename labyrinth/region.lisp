@@ -30,7 +30,7 @@
       (flet ((bail-junction (x)
                (when (featuresp x :junction)
                  (return-from adjacent-junction-p t))))
-        (nfilter neighborhood #'bail-junction)))))
+        (any (nfilter neighborhood #'bail-junction))))))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)

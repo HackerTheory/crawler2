@@ -4,7 +4,7 @@
   (flet ((bail-uncarvable (x)
            (when (carvedp x)
              (return-from filter-carvable nil))))
-    (nmap neighborhood #'bail-uncarvable)))
+    (none (nmap neighborhood #'bail-uncarvable))))
 
 (defmethod pick-cell ((stage labyrinth) cells)
   (if (> (rng 'inc) (corridor-windiness stage))
