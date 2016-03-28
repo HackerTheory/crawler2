@@ -46,8 +46,9 @@
          (>= (length dirs) 3))))
 
 (defmethod erode-dead-end ((stage labyrinth) neighborhood)
-  (flet ((bail-carved (x)
-           (when (carvedp x)
-             (return-from erode-dead-end (cell-nh stage x (layout :ortho))))))
-    (uncarve stage (origin neighborhood))
-    (nfilter neighborhood #'bail-carved)))
+  (uncarve stage (origin neighborhood))
+
+  (nmap-early-exit-reduction
+   neighborhood #'carvedp
+   :early-exit-continuation (lambda (cell)
+                              (cell-nh stage cell (layout :ortho)))))

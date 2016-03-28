@@ -233,17 +233,30 @@
 (defmacro nmap-early-exit-reduction (neighborhood func
                                      &key (test 'when)
                                        (reduction 'none)
-                                       (early-exit-return-val nil))
+                                       (early-exit-continuation nil))
   (let ((block-name (gensym))
-        (cell (gensym)))
+        (cell (gensym))
+        (arg0 (gensym))
+        (early-exit-default (gensym))
+        (early-exit-continuation-func (gensym)))
+
     `(block ,block-name
-       (,reduction
-        (nmap ,neighborhood
-              (lambda (,cell)
-                (,test (funcall ,func ,cell)
-                       (return-from ,block-name ,early-exit-return-val))))))))
-
-
+       (let ((,early-exit-continuation-func ,early-exit-continuation))
+         ;; I had to put the early-exit-default here so it could be
+         ;; represented in a fasl, otherwise it would have been the
+         ;; default in the early-exit-continuation and I wouldn't have
+         ;; to do the IF at the end of this form.
+         (flet ((,early-exit-default (,arg0)
+                  (declare (ignorable ,arg0))
+                  nil))
+           (,reduction
+            (nmap ,neighborhood
+                  (lambda (,cell)
+                    (,test (funcall ,func ,cell)
+                           (return-from ,block-name
+                             (if ,early-exit-continuation-func
+                                 (funcall ,early-exit-continuation-func ,cell)
+                                 (,early-exit-default ,cell))))))))))))
 
 ;; Testing code. Please leave for a while. :)
 (defun display-neighborhood (n)
