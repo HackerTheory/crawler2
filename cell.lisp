@@ -9,19 +9,20 @@
             :initform nil)
    (region-id :accessor region-id
               :initform nil)
+   (adjacent-regions :accessor adjacent-regions
+                     :initform nil)
    (features :accessor features
-             :initform '(:wall))))
+             :initform '(:wall))
+   (distance :accessor distance
+             :initform -1)))
 
 (defmethod print-object ((o cell) stream)
   (with-slots (x y) o
     (print-unreadable-object (o stream)
       (format stream "X:~S, Y:~S" x y))))
 
-(defmethod make-cell :around (stage x y &key)
-  (setf (cell stage x y) (call-next-method)))
-
 (defmethod make-cell (stage x y &key)
-  (make-instance 'cell :x x :y y))
+  (setf (cell stage x y) (make-instance 'cell :x x :y y)))
 
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage

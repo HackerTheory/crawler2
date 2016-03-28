@@ -23,7 +23,6 @@
     ((:module "labyrinth"
       :components
       ((:file "stage")
-       (:file "cell")
        (:file "junction")
        (:file "room")
        (:file "stairs")))

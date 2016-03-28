@@ -21,8 +21,8 @@
   (let ((z (or buffer (next-buffer stage))))
     (setf (aref (grid stage) x y z) value)))
 
-(defmethod make-cell :around ((stage buffered-stage) x y &key buffer)
-  (setf (cell stage x y :buffer buffer) (call-next-method)))
+(defmethod make-cell ((stage buffered-stage) x y &key buffer)
+  (setf (cell stage x y :buffer buffer) (make-instance 'cell :x x :y y)))
 
 (defmethod current-buffer (stage)
   (aref (buffers stage) 0))
