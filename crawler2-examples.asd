@@ -10,4 +10,5 @@
   :pathname "examples"
   :components ((:file "package")
                (:file "example")
-               (:file "labyrinth")))
+               (:file "labyrinth")
+               (:file "maze")))

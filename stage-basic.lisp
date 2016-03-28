@@ -35,6 +35,8 @@
   (call-next-method)
   (ensure-dimensions stage))
 
+(defmethod validate (stage))
+
 (defmethod build (stage))
 
 (defmethod make-stage (stage-type &rest attrs)

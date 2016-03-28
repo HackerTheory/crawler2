@@ -43,15 +43,9 @@
 
 (defmethod build ((stage labyrinth))
   (format t "Creating labyrinth.~%")
-  (profile-cell-calls "  Adding Rooms"
-    (add-rooms stage))
-  (profile-cell-calls "  Carving Corridors"
-    (convolve stage (layout :square) #'filter-carvable #'carve-corridor))
-  (profile-cell-calls "  Connecting Rooms"
-    (convolve stage (layout :ortho) #'filter-connectable #'connect))
-  (profile-cell-calls "  Creating Junctions"
-    (create-junctions stage))
-  (profile-cell-calls "  Eroding Dead Ends"
-    (process-cells stage (layout :ortho) #'filter-dead-end #'erode-dead-end))
-  (profile-cell-calls "  Adding Staircases"
-    (create-stairs stage)))
+  (profile-cell-calls "  Adding Rooms" (add-rooms stage))
+  (profile-cell-calls "  Carving Corridors" (create-corridors stage))
+  (profile-cell-calls "  Connecting Rooms" (connect-regions stage))
+  (profile-cell-calls "  Creating Junctions" (create-junctions stage))
+  (profile-cell-calls "  Eroding Dead Ends" (erode-dead-ends stage))
+  (profile-cell-calls "  Adding Staircases" (create-stairs stage)))

@@ -20,6 +20,9 @@
 (defmethod make-cell :around (stage x y &key)
   (setf (cell stage x y) (call-next-method)))
 
+(defmethod make-cell (stage x y &key)
+  (make-instance 'cell :x x :y y))
+
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
     (when (and (not (minusp x))

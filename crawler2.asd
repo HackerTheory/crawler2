@@ -13,15 +13,20 @@
    (:file "util")
    (:file "random")
    (:file "neighborhood")
+   (:file "region")
+   (:file "corridor")
    (:file "stage-basic")
    (:file "stage-buffered")
    (:file "cell")
-   (:module "labyrinth"
+   (:module "stages"
     :components
-    ((:file "stage")
-     (:file "cell")
-     (:file "region")
-     (:file "connector")
-     (:file "room")
-     (:file "corridor")
-     (:file "stairs")))))
+    ((:module "labyrinth"
+      :components
+      ((:file "stage")
+       (:file "cell")
+       (:file "junction")
+       (:file "room")
+       (:file "stairs")))
+     (:module "maze"
+      :components
+      ((:file "stage")))))))

@@ -7,6 +7,7 @@
         #:cl-speedy-queue)
   (:export #:stage
            #:labyrinth
+           #:maze
            #:make-stage
            #:width
            #:height

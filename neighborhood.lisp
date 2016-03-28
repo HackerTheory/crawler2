@@ -17,6 +17,10 @@
   (with-slots (x y) neighborhood
     (values (+ x nx) (+ y ny))))
 
+(defun neighborhoodp (neighborhood)
+  (when (eq (type-of neighborhood) 'neighborhood)
+    neighborhood))
+
 (defun nmap (neighborhood func &rest args)
   (apply (map-fn neighborhood) neighborhood func args))
 
