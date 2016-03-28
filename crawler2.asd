@@ -12,10 +12,10 @@
   ((:file "package")
    (:file "util")
    (:file "random")
-   (:file "cell")
    (:file "neighborhood")
    (:file "stage-basic")
    (:file "stage-buffered")
+   (:file "cell")
    (:module "labyrinth"
     :components
     ((:file "stage")
