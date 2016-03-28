@@ -51,7 +51,7 @@
           features '(:wall))))
 
 (defmethod featuresp (cell &rest features)
-  (some (lambda (x) (member x features)) (features cell)))
+  (intersection features (features cell)))
 
 (defmethod remove-feature (cell feature)
   (deletef (features cell) feature))
