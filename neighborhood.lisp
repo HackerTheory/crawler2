@@ -246,14 +246,11 @@
                   (,test (funcall ,func ,cell)
                          (return-from ,block-name
                            (cond
-                             ((symbolp ,early-exit-continuation-func)
-                              (cond
-                                ((eq ,early-exit-continuation-func nil) nil)
-                                ((eq ,early-exit-continuation-func t) t)
-                                (t (error "nmap-early-exit-reduction: Unknown early-exit-continuation-symbol: ~A" ,early-exit-continuation-func))))
+                             ((eq ,early-exit-continuation-func nil) nil)
+                             ((eq ,early-exit-continuation-func t) t)
                              ((functionp ,early-exit-continuation-func)
                               (funcall ,early-exit-continuation-func ,cell))
-                             (t (error "nmap-early-exit-reduction: Can't execute a thing of type: ~A" (type-of ,early-exit-continuation-func)))))))))))))
+                             (t (error "nmap-early-exit-reduction: :early-execute-continuation is a thing of type: '~A' and I don't know what to do with it." (type-of ,early-exit-continuation-func)))))))))))))
 
 ;; Testing code. Please leave for a while. :)
 (defun display-neighborhood (n)
