@@ -27,10 +27,11 @@
 (defmethod adjacent-junction-p ((stage labyrinth) cell)
   (with-slots (x y) cell
     (let ((neighborhood (nh-realize (layout :ortho) stage x y)))
-      (flet ((bail-junction (x)
-               (when (featuresp x :junction)
-                 (return-from adjacent-junction-p t))))
-        (any (nfilter neighborhood #'bail-junction))))))
+      (nmap-early-exit-reduction
+       neighborhood
+       (lambda (x) (featuresp x :junction))
+       :reduction any
+       :early-exit-continuation (lambda (x) (declare (ignore x)))))))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
