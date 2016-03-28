@@ -49,3 +49,4 @@
    neighborhood
    #'carvedp
    :early-exit-continuation (lambda (x) (cell-nh stage x (layout :ortho)))))
+  (uncarve stage (origin neighborhood))
