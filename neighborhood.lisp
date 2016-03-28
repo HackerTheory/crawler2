@@ -236,27 +236,24 @@
                                        (early-exit-continuation nil))
   (let ((block-name (gensym))
         (cell (gensym))
-        (arg0 (gensym))
-        (early-exit-default (gensym))
         (early-exit-continuation-func (gensym)))
 
     `(block ,block-name
        (let ((,early-exit-continuation-func ,early-exit-continuation))
-         ;; I had to put the early-exit-default here so it could be
-         ;; represented in a fasl, otherwise it would have been the
-         ;; default in the early-exit-continuation and I wouldn't have
-         ;; to do the IF at the end of this form.
-         (flet ((,early-exit-default (,arg0)
-                  (declare (ignorable ,arg0))
-                  nil))
-           (,reduction
-            (nmap ,neighborhood
-                  (lambda (,cell)
-                    (,test (funcall ,func ,cell)
-                           (return-from ,block-name
-                             (if ,early-exit-continuation-func
-                                 (funcall ,early-exit-continuation-func ,cell)
-                                 (,early-exit-default ,cell))))))))))))
+         (,reduction
+          (nmap ,neighborhood
+                (lambda (,cell)
+                  (,test (funcall ,func ,cell)
+                         (return-from ,block-name
+                           (cond
+                             ((symbolp ,early-exit-continuation-func)
+                              (cond
+                                ((eq ,early-exit-continuation-func nil) nil)
+                                ((eq ,early-exit-continuation-func t) t)
+                                (t (error "nmap-early-exit-reduction: Unknown early-exit-continuation-symbol: ~A" ,early-exit-continuation-func))))
+                             ((functionp ,early-exit-continuation-func)
+                              (funcall ,early-exit-continuation-func ,cell))
+                             (t (error "nmap-early-exit-reduction: Can't execute a thing of type: ~A" (type-of ,early-exit-continuation-func)))))))))))))
 
 ;; Testing code. Please leave for a while. :)
 (defun display-neighborhood (n)
