@@ -45,8 +45,8 @@
          (>= (length dirs) 3))))
 
 (defmethod erode-dead-end ((stage labyrinth) neighborhood)
+  (uncarve stage (origin neighborhood))
   (nmap-early-exit-reduction
    neighborhood
    #'carvedp
    :early-exit-continuation (lambda (x) (cell-nh stage x (layout :ortho)))))
-  (uncarve stage (origin neighborhood))

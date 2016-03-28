@@ -31,7 +31,7 @@
        neighborhood
        (lambda (x) (featuresp x :junction))
        :reduction any
-       :early-exit-continuation (lambda (x) (declare (ignore x)))))))
+       :early-exit-continuation t))))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
