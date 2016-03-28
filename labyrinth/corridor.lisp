@@ -1,6 +1,5 @@
 (in-package :crawler2)
 
-
 (defmethod filter-carvable ((stage labyrinth) neighborhood)
   (nmap-early-exit-reduction neighborhood #'carvedp))
 
@@ -46,8 +45,7 @@
          (>= (length dirs) 3))))
 
 (defmethod erode-dead-end ((stage labyrinth) neighborhood)
-  (flet ((bail-carved (x)
-           (when (carvedp x)
-             (return-from erode-dead-end (cell-nh stage x (layout :ortho))))))
-    (uncarve stage (origin neighborhood))
-    (nfilter neighborhood #'bail-carved)))
+  (nmap-early-exit-reduction
+   neighborhood
+   #'carvedp
+   :early-exit-continuation (lambda (x) (cell-nh stage x (layout :ortho)))))
