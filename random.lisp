@@ -1,5 +1,7 @@
 (in-package :crawler2)
 
+(defvar *rng* nil)
+
 (defun make-seed ()
   (mod
    (parse-integer
@@ -9,21 +11,23 @@
              (get-internal-real-time))))
    (expt 2 48)))
 
-(defmethod set-seed (stage)
-  (setf (random-seed *random-generator*) (seed stage)))
+(defmethod make-rng (stage)
+  (setf *rng* (make-instance 'ranq1-random-number-generator)
+        (random-seed *rng*) (seed stage))
+  (format t "Random seed: ~A~%" (seed stage)))
 
 (defmethod rng ((method (eql 'elt)) &key list)
-  (random-element *random-generator* list))
+  (random-element *rng* list))
 
 (defmethod rng ((method (eql 'int)) &key (min 0) (max 1))
-  (integer-random *random-generator* min max))
+  (integer-random *rng* min max))
 
 (defmethod rng ((method (eql 'inc)) &key (min 0.0) (max 1.0))
-  (random-range-inclusive *random-generator* min max))
+  (random-range-inclusive *rng* min max))
 
 (defmethod rng ((method (eql 'odd)) &key (min 1) (max 3))
   (let ((num (rng 'inc :min min :max max)))
     (if (evenp num) (decf num) num)))
 
 (defmethod rng ((method (eql 'bool)) &key (probability 0.5))
-  (random-boolean *random-generator* probability))
+  (random-boolean *rng* probability))

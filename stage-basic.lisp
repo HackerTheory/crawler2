@@ -39,8 +39,7 @@
 
 (defmethod make-stage (stage-type &rest attrs)
   (let ((stage (apply #'make-instance stage-type attrs)))
-    (format t "Random seed: ~A~%" (seed stage))
-    (set-seed stage)
+    (make-rng stage)
     (validate stage)
     (make-grid stage)
     (build stage)
