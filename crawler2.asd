@@ -11,6 +11,7 @@
   :components
   ((:file "package")
    (:file "util")
+   (:file "feature-set")
    (:file "random")
    (:file "neighborhood")
    (:file "region")
