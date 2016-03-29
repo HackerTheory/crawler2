@@ -7,8 +7,6 @@
    (height :reader height
            :initarg :height
            :initform 49)
-   (buffers :reader buffers
-            :initform (vector 0))
    (grid :accessor grid
          :initarg :grid)
    (seed :reader seed
