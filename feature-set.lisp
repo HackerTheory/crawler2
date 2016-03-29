@@ -30,7 +30,7 @@
 
 ;; convert a single feature keyword argument to its appropriate bit
 ;; position or give it one and then return it.
-(defmethod kword->val ((feature-set feature-set) kword)
+(defmethod kword->bitpos ((feature-set feature-set) kword)
   (multiple-value-bind (val presentp)
       (gethash kword (fstore feature-set))
     (if presentp
@@ -45,7 +45,7 @@
 
 
 ;; convert a bit position integer into a keyword, but error if it isn't present.
-(defmethod val->kword ((feature-set feature-set) bit-pos)
+(defmethod bitpos->kword ((feature-set feature-set) bit-pos)
   (multiple-value-bind (kword presentp)
       (gethash bit-pos (fstore feature-set))
     (if presentp
@@ -67,7 +67,8 @@
                           (car feature-keywords)
                           feature-keywords)
         :for kword :in fkeys
-        :do (setf result (logior result (ash 1 (kword->val feature-set kword))))
+        :do (setf result
+                  (logior result (ash 1 (kword->bitpos feature-set kword))))
         :finally (return result)))))
 
 ;; convert an integer into a list of features and return the feature list.
@@ -77,7 +78,7 @@
      (error "kval: Illegal value <0 cannot be converted to keyword list!"))
 
     ((zerop val)
-     (val->kword feature-set val))
+     (bitpos->kword feature-set val))
 
     (t
      (loop
@@ -86,7 +87,7 @@
         :with mask = 1
         :for bit-pos :from 0 :below bit-length
         :do (unless (zerop (logand (ash mask bit-pos) val))
-              (push (val->kword feature-set bit-pos) result))
+              (push (bitpos->kword feature-set bit-pos) result))
         :finally (return (nreverse result))))))
 
 ;; intersect a collection of lists of feature keywords and return the result
