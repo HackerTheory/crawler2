@@ -50,7 +50,7 @@
         (region2 (get-region stage target)))
     (dolist (cell (connectors region1))
       (when-let ((adjacent (adjacent-regions cell)))
-        (when (intersection `(,source ,target) adjacent)
+        (when (= (length (intersection `(,source ,target) adjacent)) 2)
           (deletef (connectors region1) cell)
           (deletef (connectors region2) cell))))))
 
