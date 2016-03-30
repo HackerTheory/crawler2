@@ -9,11 +9,11 @@
         :do (make-junction stage source)
             (remove-extra-connectors stage region-id target)
             (move-connectors stage target region-id))
-  (convolve stage (layout :ortho) #'filter-connectable #'make-extra-junctions))
+  (convolve stage (layout :orthogonal) #'filter-connectable #'make-extra-junctions))
 
 (defmethod adjacent-junction-p ((stage labyrinth) cell)
   (with-slots (x y) cell
-    (let ((neighborhood (nh-realize (layout :ortho) stage x y)))
+    (let ((neighborhood (nh-realize (layout :orthogonal) stage x y)))
       (nmap-early-exit-reduction
        neighborhood
        (lambda (x) (featuresp x :junction))
@@ -63,4 +63,4 @@
       (push cell (connectors region2)))))
 
 (defmethod connect-regions (stage)
-  (convolve stage (layout :ortho) #'filter-connectable #'connect))
+  (convolve stage (layout :orthogonal) #'filter-connectable #'connect))

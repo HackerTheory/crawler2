@@ -39,6 +39,14 @@
 (defmethod (setf cell) (value stage x y &key)
   (setf (aref (grid stage) x y) value))
 
+(defmethod stage-border-p (stage cell)
+  (with-slots (width height) stage
+    (with-slots (x y) cell
+      (or (zerop x)
+          (zerop y)
+          (= x (1- width))
+          (= y (1- height))))))
+
 (defmethod carve (stage cell &key (region-id (current-region stage)) feature)
   (setf (carvedp cell) t
         (region-id cell) region-id)

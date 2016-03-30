@@ -12,24 +12,20 @@
   (let ((results))
     (dolist (dir '(n s e w))
       (let ((c1 (funcall dir neighborhood)))
-        (when (and (> (cell-x c1) 0)
-                   (> (cell-y c1) 0)
-                   (< (cell-x c1) (1- (width stage)))
-                   (< (cell-y c1) (1- (height stage))))
+        (unless (stage-border-p stage c1)
           (let ((c2 (funcall dir neighborhood 2)))
             (unless (carvedp c2)
-              (push (list c1 c2) results))))))
+              (push (vector c1 c2) results))))))
     (rng 'elt :list results)))
 
 (defmethod carve-direction (stage origin cells)
   (with-slots (x y) origin
-    (let ((neighborhood (nh-realize (layout :ortho :maximum 2) stage x y)))
+    (let ((neighborhood (nh-realize (layout :orthogonal :maximum 2) stage x y)))
       (if-let ((choice (choose-uncarved stage neighborhood)))
-        (loop :for cell :in choice
+        (loop :for cell :across choice
               :do (carve stage cell :feature :corridor)
-              :finally (push cell cells))
-        (deletef cells origin)))
-    cells))
+              :finally (return (push cell cells)))
+        (deletef cells origin)))))
 
 (defmethod carve-corridor (stage neighborhood)
   (let ((origin (origin neighborhood)))
@@ -53,7 +49,7 @@
    (nmap-early-exit-reduction
     neighborhood
     #'carvedp
-    :early-exit-continuation (lambda (x) (cell-nh stage x (layout :ortho))))))
+    :early-exit-continuation (lambda (x) (cell-nh stage x (layout :orthogonal))))))
 
 (defmethod erode-dead-ends (stage)
-  (process-cells stage (layout :ortho) #'filter-dead-end #'uncarve-dead-end))
+  (process-cells stage (layout :orthogonal) #'filter-dead-end #'uncarve-dead-end))

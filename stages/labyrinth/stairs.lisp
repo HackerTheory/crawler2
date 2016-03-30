@@ -35,7 +35,7 @@
     (enqueue goal queue)
     (loop :until (queue-empty-p queue)
           :do (loop :with current = (dequeue queue)
-                    :with n = (cell-nh stage current (layout :ortho))
+                    :with n = (cell-nh stage current (layout :orthogonal))
                     :with carved = (nfilter n #'carvedp)
                     :for cell :in carved
                     :when (= (distance cell) -1)
