@@ -41,8 +41,8 @@
                     :when (= (distance cell) -1)
                       :do (enqueue cell queue)
                           (setf (distance cell) (1+ (distance current)))
-                          (when (and (staircase-suitable-p stage n)
-                                     (> (distance cell) (distance goal)))
+                          (when (and (> (distance cell) (distance goal))
+                                     (staircase-suitable-p stage n))
                             (setf goal cell))))
     (add-feature (choose-downstairs stage (region-id goal)) :stairs-down)))
 

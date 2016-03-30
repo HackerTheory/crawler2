@@ -44,8 +44,8 @@
 
 (defmethod filter-dead-end (stage neighborhood)
   (let ((dirs (remove-if #'identity (nmap neighborhood #'carvedp))))
-    (and (carvedp (origin neighborhood))
-         (>= (length dirs) 3))))
+    (and (>= (length dirs) 3)
+         (carvedp (origin neighborhood)))))
 
 (defmethod uncarve-dead-end (stage neighborhood)
   (uncarve stage (origin neighborhood))

@@ -49,9 +49,8 @@
   (let ((region1 (get-region stage source))
         (region2 (get-region stage target)))
     (dolist (cell (connectors region1))
-      (let ((adjacent (adjacent-regions cell)))
-        (when (and (member source adjacent)
-                   (member target adjacent))
+      (when-let ((adjacent (adjacent-regions cell)))
+        (when (intersection `(,source ,target) adjacent)
           (deletef (connectors region1) cell)
           (deletef (connectors region2) cell))))))
 
