@@ -76,11 +76,11 @@
   (with-slots (x y) cell
     (funcall layout stage x y)))
 
-(defmethod layout ((name (eql :horizontal)) &rest extent-args)
-  (make-neighborhood #'nset-horizontal #'nmap-horizontal extent-args))
+(defmethod layout ((name (eql :h-sense)) &rest extent-args)
+  (make-neighborhood #'nset-h-sense #'nmap-h-sense extent-args))
 
-(defmethod layout ((name (eql :vertical)) &rest extent-args)
-  (make-neighborhood #'nset-vertical #'nmap-vertical extent-args))
+(defmethod layout ((name (eql :v-sense)) &rest extent-args)
+  (make-neighborhood #'nset-v-sense #'nmap-v-sense extent-args))
 
 (defmethod layout ((name (eql :orthogonal)) &rest extent-args)
   (make-neighborhood #'nset-orthogonal #'nmap-orthogonal extent-args))
@@ -109,12 +109,12 @@
 (defun nh-realize (nh-generator stage x y)
   (funcall nh-generator stage x y))
 
-(defun nset-horizontal (neighborhood x y)
+(defun nset-h-sense (neighborhood x y)
   (declare (ignore y))
   (and (<= (abs x) (maximum (extent neighborhood)))
        (not (zerop x))))
 
-(defun nmap-horizontal (neighborhood func)
+(defun nmap-h-sense (neighborhood func)
   (let ((results)
         (max (maximum (extent neighborhood))))
     (loop :for x :from (- max) :below 0
@@ -127,12 +127,12 @@
             :do (push (funcall func cell) results))
     results))
 
-(defun nset-vertical (neighborhood x y)
+(defun nset-v-sense (neighborhood x y)
   (declare (ignore x))
   (and (<= (abs y) (maximum (extent neighborhood)))
        (not (zerop y))))
 
-(defun nmap-vertical (neighborhood func)
+(defun nmap-v-sense (neighborhood func)
   (let ((results)
         (max (maximum (extent neighborhood))))
     (loop :for y :from (- max) :below 0
