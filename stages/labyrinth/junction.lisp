@@ -12,13 +12,12 @@
   (convolve stage (layout :orthogonal) #'filter-connectable #'make-extra-junctions))
 
 (defmethod adjacent-junction-p ((stage labyrinth) cell)
-  (with-slots (x y) cell
-    (let ((neighborhood (nh-realize (layout :orthogonal) stage x y)))
-      (nmap-early-exit-reduction
-       neighborhood
-       (lambda (x) (featuresp x :junction))
-       :reduction any
-       :early-exit-continuation t))))
+  (let ((neighborhood (cell-nh stage cell (layout :orthogonal))))
+    (nmap-early-exit-reduction
+     neighborhood
+     (lambda (x) (featuresp x :junction))
+     :reduction any
+     :early-exit-continuation t)))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
