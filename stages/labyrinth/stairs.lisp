@@ -11,7 +11,7 @@
     (rng 'elt :list
          (mapcar
           #'origin
-          (collect-cells
+          (collect
            stage
            (layout :square :maximum 0)
            #'staircase-suitable-p

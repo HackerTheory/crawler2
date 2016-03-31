@@ -298,6 +298,41 @@
                               (funcall ,early-exit-continuation-func ,cell))
                              (t (error "nmap-early-exit-reduction: :early-execute-continuation is a thing of type: '~A' and I don't know what to do with it." (type-of ,early-exit-continuation-func)))))))))))))
 
+(defun convolve (stage layout filter effect &key (x1 1) (x2 -1) (y1 1) (y2 -1))
+  (with-slots (width height) stage
+    (loop :with affectedp
+          :for x :from x1 :below (+ width x2)
+          :do (loop :for y :from y1 :below (+ height y2)
+                    :for neighborhood = (funcall layout stage x y)
+                    :when (funcall filter stage neighborhood)
+                      :do (let ((value (funcall effect stage neighborhood)))
+                            (setf affectedp (or affectedp value))))
+          :finally (return affectedp))))
+
+(defun collect (stage layout filter &key (x1 1) (x2 -1) (y1 1) (y2 -1))
+  (let ((items))
+    (convolve
+     stage
+     layout
+     filter
+     (lambda (s n)
+       (declare (ignore s))
+       (push n items))
+     :x1 x1
+     :x2 x2
+     :y1 y1
+     :y2 y2)
+    items))
+
+(defun process (stage layout filter processor &key items nh)
+  (loop :with items = (or items (collect stage layout filter))
+        :while items
+        :do (loop :with neighborhood = (pop items)
+                  :while (funcall filter stage neighborhood)
+                  :for new = (funcall processor stage neighborhood)
+                  :when new
+                    :do (push new items))))
+
 ;; Testing code. Please leave for a while. :)
 (defun display-neighborhood (n)
   (let ((max-distance (maximum (extent n))))

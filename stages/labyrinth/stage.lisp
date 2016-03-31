@@ -17,7 +17,9 @@
                   :initarg :junction-rate
                   :initform 0.05)
    (rooms :accessor rooms
-          :initform nil)))
+          :initform nil)
+   (dead-ends :accessor dead-ends
+              :initform nil)))
 
 (defmethod ensure-dimensions ((stage labyrinth))
   (with-slots (width height room-size-min room-size-max) stage

@@ -24,10 +24,12 @@
       (loop :for cell :across choice
             :do (carve stage cell :feature :corridor)
             :finally (return (push cell cells)))
-      (deletef cells origin))))
+      (progn (push origin (dead-ends stage))
+             (deletef cells origin)))))
 
 (defmethod carve-corridor (stage neighborhood)
   (let ((origin (origin neighborhood)))
+    (push origin (dead-ends stage))
     (carve stage origin :region-id (make-region stage) :feature :corridor)
     (loop :with cells = (list origin)
           :while cells
@@ -51,4 +53,10 @@
     :early-exit-continuation (lambda (x) (cell-nh stage x (layout :orthogonal))))))
 
 (defmethod erode-dead-ends (stage)
-  (process-cells stage (layout :orthogonal) #'filter-dead-end #'uncarve-dead-end))
+  (loop :with cells = (dead-ends stage)
+        :while cells
+        :do (loop :with nh = (cell-nh stage (pop cells) (layout :orthogonal))
+                  :while (filter-dead-end stage nh)
+                  :for new = (uncarve-dead-end stage nh)
+                  :when new
+                    :do (push new cells))))
