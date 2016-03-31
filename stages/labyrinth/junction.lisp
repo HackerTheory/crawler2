@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
 (defmethod create-junctions ((stage labyrinth))
-  (loop :with region-id = (rng 'inc :min 1 :max (current-region stage))
+  (loop :with region-id = (current-region stage)
         :for connectors = (connectors (get-region stage region-id))
         :while connectors
         :for source = (rng 'elt :list connectors)
@@ -45,13 +45,15 @@
         (push cell (connectors (get-region stage region-id)))))))
 
 (defmethod remove-extra-connectors ((stage labyrinth) source target)
-  (let ((region1 (get-region stage source))
-        (region2 (get-region stage target)))
-    (dolist (cell (connectors region1))
-      (when-let ((adjacent (adjacent-regions cell)))
-        (when (= (length (intersection `(,source ,target) adjacent)) 2)
-          (deletef (connectors region1) cell)
-          (deletef (connectors region2) cell))))))
+  (loop :with region1 = (get-region stage source)
+        :with region2 = (get-region stage target)
+        :for cell :in (connectors region1)
+        :for adjacent = (adjacent-regions cell)
+        :when (and adjacent
+                   (member source adjacent)
+                   (member target adjacent))
+          :do (deletef (connectors region1) cell :count 1)
+              (deletef (connectors region2) cell :count 1)))
 
 (defmethod move-connectors ((stage labyrinth) source target)
   (let ((region1 (get-region stage source))

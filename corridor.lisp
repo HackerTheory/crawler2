@@ -4,9 +4,12 @@
   (nmap-early-exit-reduction neighborhood #'carvedp))
 
 (defmethod pick-cell (stage cells)
-  (if (> (rng 'inc) (corridor-windiness stage))
-      (rng 'elt :list cells)
-      (first cells)))
+  (let ((windiness (corridor-windiness stage)))
+    (if (or (zerop windiness)
+            (and (not (= windiness 1))
+                 (> (rng 'inc) windiness)))
+        (rng 'elt :list cells)
+        (first cells))))
 
 (defmethod choose-uncarved (stage neighborhood)
   (let ((results))
@@ -25,7 +28,7 @@
             :do (carve stage cell :feature :corridor)
             :finally (return (push cell cells)))
       (progn (push origin (dead-ends stage))
-             (deletef cells origin)))))
+             (deletef cells origin :count 1)))))
 
 (defmethod carve-corridor (stage neighborhood)
   (let ((origin (origin neighborhood)))
@@ -53,7 +56,7 @@
     :early-exit-continuation (lambda (x) (cell-nh stage x (layout :orthogonal))))))
 
 (defmethod erode-dead-ends (stage)
-  (process stage NIL #'filter-dead-end #'uncarve-dead-end
+  (process stage nil #'filter-dead-end #'uncarve-dead-end
+           :items (dead-ends stage)
            :nh-generator (lambda (cell)
-                           (cell-nh stage cell (layout :orthogonal)))
-           :items (dead-ends stage)))
+                           (cell-nh stage cell (layout :orthogonal)))))

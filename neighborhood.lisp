@@ -324,9 +324,7 @@
      :y2 y2)
     items))
 
-(defun process (stage layout filter processor
-                &key items nh (nh-generator #'identity))
-  (declare (ignore nh)) ;; Should probably use this somewhere...?
+(defun process (stage layout filter processor &key items (nh-generator #'identity))
   (loop :with items = (or items (collect stage layout filter))
         :while items
         :do (loop :with neighborhood = (funcall nh-generator (pop items))

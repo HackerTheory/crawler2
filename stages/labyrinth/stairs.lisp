@@ -22,7 +22,6 @@
 
 (defmethod make-upstairs ((stage labyrinth))
   (let ((cell (choose-upstairs stage)))
-    (add-feature cell :stairs-up)
     (setf (distance cell) 0)
     cell))
 
@@ -44,8 +43,10 @@
                           (when (and (> (distance cell) (distance goal))
                                      (staircase-suitable-p stage n))
                             (setf goal cell))))
-    (add-feature (choose-downstairs stage (region-id goal)) :stairs-down)))
+    (choose-downstairs stage (region-id goal))))
 
 (defmethod create-stairs ((stage labyrinth))
-  (let ((upstairs (make-upstairs stage)))
-    (make-downstairs stage upstairs)))
+  (let* ((upstairs (make-upstairs stage))
+         (downstairs (make-downstairs stage upstairs)))
+    (add-feature upstairs :stairs-up)
+    (add-feature downstairs :stairs-down)))
