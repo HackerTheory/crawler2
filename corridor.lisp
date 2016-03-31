@@ -53,10 +53,7 @@
     :early-exit-continuation (lambda (x) (cell-nh stage x (layout :orthogonal))))))
 
 (defmethod erode-dead-ends (stage)
-  (loop :with cells = (dead-ends stage)
-        :while cells
-        :do (loop :with nh = (cell-nh stage (pop cells) (layout :orthogonal))
-                  :while (filter-dead-end stage nh)
-                  :for new = (uncarve-dead-end stage nh)
-                  :when new
-                    :do (push new cells))))
+  (process stage NIL #'filter-dead-end #'uncarve-dead-end
+           :nh-generator (lambda (cell)
+                           (cell-nh stage cell (layout :orthogonal)))
+           :items (dead-ends stage)))
