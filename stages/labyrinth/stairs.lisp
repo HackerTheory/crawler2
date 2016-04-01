@@ -13,7 +13,7 @@
           #'origin
           (collect
            stage
-           (layout :square :maxs '(0))
+           (layout :rect :maxs '(0))
            #'staircase-suitable-p
            :x1 x1
            :x2 (- x2 (width stage))

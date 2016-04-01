@@ -40,7 +40,7 @@
           :do (setf cells (carve-direction stage cell cells)))))
 
 (defmethod create-corridors (stage)
-  (convolve stage (layout :square) #'filter-carvable #'carve-corridor))
+  (convolve stage (layout :rect) #'filter-carvable #'carve-corridor))
 
 (defmethod filter-dead-end (stage neighborhood)
   (let ((dirs (remove-if #'identity (nmap neighborhood #'carvedp))))

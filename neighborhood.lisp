@@ -144,23 +144,23 @@
 (defmethod layout ((name (eql :diagonal)) &rest extent-args)
   (make-neighborhood #'nset-diagonal #'nmap-diagonal extent-args))
 
-(defmethod layout ((name (eql :circle)) &rest extent-args)
-  (make-neighborhood #'nset-circle #'nmap-default extent-args))
+(defmethod layout ((name (eql :ellipse)) &rest extent-args)
+  (make-neighborhood #'nset-ellipse #'nmap-default extent-args))
 
-(defmethod layout ((name (eql :circle-outline)) &rest extent-args)
-  (make-neighborhood #'nset-circle-outline #'nmap-default extent-args))
+(defmethod layout ((name (eql :ellipse-outline)) &rest extent-args)
+  (make-neighborhood #'nset-ellipse-outline #'nmap-default extent-args))
 
-(defmethod layout ((name (eql :circle-outline+origin)) &rest extent-args)
-  (make-neighborhood #'nset-circle-outline+origin #'nmap-default extent-args))
+(defmethod layout ((name (eql :ellipse-outline+origin)) &rest extent-args)
+  (make-neighborhood #'nset-ellipse-outline+origin #'nmap-default extent-args))
 
-(defmethod layout ((name (eql :square)) &rest extent-args)
-  (make-neighborhood #'nset-square #'nmap-square extent-args))
+(defmethod layout ((name (eql :rect)) &rest extent-args)
+  (make-neighborhood #'nset-rect #'nmap-rect extent-args))
 
-(defmethod layout ((name (eql :square-outline)) &rest extent-args)
-  (make-neighborhood #'nset-square-outline #'nmap-square-outline extent-args))
+(defmethod layout ((name (eql :rect-outline)) &rest extent-args)
+  (make-neighborhood #'nset-rect-outline #'nmap-rect-outline extent-args))
 
-(defmethod layout ((layout (eql :square-outline+origin)) &rest extent-args)
-  (make-neighborhood #'nset-square-outline+origin #'nmap-square-outline+origin extent-args))
+(defmethod layout ((layout (eql :rect-outline+origin)) &rest extent-args)
+  (make-neighborhood #'nset-rect-outline+origin #'nmap-rect-outline+origin extent-args))
 
 (defun nh-realize (nh-generator stage x y)
   (funcall nh-generator stage x y))
@@ -249,38 +249,38 @@
        :do (push (funcall func cell) results))
     results))
 
-(defun nset-circle (neighborhood x y)
+(defun nset-ellipse (neighborhood x y)
   (let ((maximum (axis-max (extent neighborhood) +nd-extent+)))
     (<= (+ (* x x) (* y y))
         (* maximum maximum))))
 
-(defun nset-circle-outline (neighborhood x y)
+(defun nset-ellipse-outline (neighborhood x y)
   (let ((minimum (axis-min (extent neighborhood) +nd-extent+)))
-    (and (nset-circle neighborhood x y)
+    (and (nset-ellipse neighborhood x y)
          (not (<= (+ (* x x) (* y y))
                   (* minimum minimum))))))
 
-(defun nset-circle-outline+origin (neighborhood x y)
-  (or (nset-circle-outline neighborhood x y)
+(defun nset-ellipse-outline+origin (neighborhood x y)
+  (or (nset-ellipse-outline neighborhood x y)
       (and (zerop x)
            (zerop y))))
 
-(defun nset-square (neighborhood x y)
+(defun nset-rect (neighborhood x y)
   (nset-default neighborhood x y))
 
-(defun nmap-square (neighborhood func)
+(defun nmap-rect (neighborhood func)
   (nmap-default neighborhood func))
 
-(defun nset-square-outline (neighborhood x y)
+(defun nset-rect-outline (neighborhood x y)
   (let ((minimum (axis-min (extent neighborhood) +nd-extent+)))
     (and
      (not (and (>= x (- minimum))
                (>= y (- minimum))
                (<= x minimum)
                (<= y minimum)))
-     (nset-square neighborhood x y))))
+     (nset-rect neighborhood x y))))
 
-(defun nmap-square-outline (neighborhood func)
+(defun nmap-rect-outline (neighborhood func)
   (let ((results))
     (multiple-value-bind (min max)
         (axis-range (extent neighborhood) +nd-extent+)
@@ -306,14 +306,14 @@
                 :do (push (funcall func cell) results)))
       results)))
 
-(defun nset-square-outline+origin (neighborhood x y)
+(defun nset-rect-outline+origin (neighborhood x y)
   (or (and (zerop x)
            (zerop y))
-      (nset-square-outline neighborhood x y)))
+      (nset-rect-outline neighborhood x y)))
 
-(defun nmap-square-outline+origin (neighborhood func)
+(defun nmap-rect-outline+origin (neighborhood func)
   (cons (funcall func (origin neighborhood))
-        (nmap-square-outline neighborhood func)))
+        (nmap-rect-outline neighborhood func)))
 
 (defun nset-default (neighborhood x y)
   (let ((maximum (axis-max (extent neighborhood) +nd-extent+)))
@@ -380,8 +380,8 @@
      :y2 y2)
     items))
 
-(defun process (stage layout filter processor &key items (nh-generator #'identity))
-  (loop :with items = (or items (collect stage layout filter))
+(defun process (stage layout filter processor &key (items nil items-p) (nh-generator #'identity))
+  (loop :with items = (if items-p items (collect stage layout filter))
         :while items
         :for neighborhood = (funcall nh-generator (pop items))
         :when (funcall filter stage neighborhood)
