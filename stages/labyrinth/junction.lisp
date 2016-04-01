@@ -12,23 +12,23 @@
   (convolve stage (layout :orthogonal) #'filter-connectable #'make-extra-junctions))
 
 (defmethod adjacent-junction-p ((stage labyrinth) cell)
-  (let ((neighborhood (cell-nh stage cell (layout :orthogonal))))
-    (nmap-early-exit-reduction
-     neighborhood
+  (let ((nh (cell-nh stage cell (layout :orthogonal))))
+    (nmap-short
+     nh
      (lambda (x) (featuresp x :junction))
-     :reduction any
-     :early-exit-continuation t)))
+     :reduce any
+     :return-val t)))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
     (carve stage cell :region-id nil :feature :junction)))
 
-(defmethod make-extra-junctions ((stage labyrinth) neighborhood)
+(defmethod make-extra-junctions ((stage labyrinth) nh)
   (when (< (rng 'inc) (junction-rate stage))
-    (make-junction stage (origin neighborhood))))
+    (make-junction stage (origin nh))))
 
-(defmethod filter-connectable ((stage labyrinth) neighborhood)
-  (with-accessors ((o origin) (n n) (s s) (e e) (w w)) neighborhood
+(defmethod filter-connectable ((stage labyrinth) nh)
+  (with-accessors ((o origin) (n n) (s s) (e e) (w w)) nh
     (and (not (region-id o))
          (let ((ns (mapcar #'region-id (list n s)))
                (ew (mapcar #'region-id (list e w))))
@@ -37,10 +37,10 @@
                (and (not (apply #'eql ew))
                     (not (some #'null ew))))))))
 
-(defmethod connect ((stage labyrinth) neighborhood)
-  (let ((cell (origin neighborhood)))
+(defmethod connect ((stage labyrinth) nh)
+  (let ((cell (origin nh)))
     (with-slots (adjacent-regions) cell
-      (setf adjacent-regions (remove nil (nmap neighborhood #'region-id)))
+      (setf adjacent-regions (remove nil (nmap nh #'region-id)))
       (dolist (region-id adjacent-regions)
         (push cell (connectors (get-region stage region-id)))))))
 

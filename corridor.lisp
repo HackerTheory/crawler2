@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
-(defmethod filter-carvable (stage neighborhood)
-  (nmap-early-exit-reduction neighborhood #'carvedp))
+(defmethod filter-carvable (stage nh)
+  (nmap-short nh #'carvedp))
 
 (defmethod pick-cell (stage cells)
   (let ((windiness (corridor-windiness stage)))
@@ -11,27 +11,27 @@
         (rng 'elt :list cells)
         (first cells))))
 
-(defmethod choose-uncarved (stage neighborhood)
+(defmethod choose-uncarved (stage nh)
   (let ((results))
     (dolist (dir '(n s e w))
-      (let ((c1 (funcall dir neighborhood)))
+      (let ((c1 (funcall dir nh)))
         (unless (stage-border-p stage c1)
-          (let ((c2 (funcall dir neighborhood 2)))
+          (let ((c2 (funcall dir nh 2)))
             (unless (carvedp c2)
               (push (vector c1 c2) results))))))
     (rng 'elt :list results)))
 
 (defmethod carve-direction (stage origin cells)
-  (let ((neighborhood (cell-nh stage origin (layout :orthogonal :maxs '(2)))))
-    (if-let ((choice (choose-uncarved stage neighborhood)))
+  (let ((nh (cell-nh stage origin (layout :orthogonal :maxs '(2)))))
+    (if-let ((choice (choose-uncarved stage nh)))
       (loop :for cell :across choice
             :do (carve stage cell :feature :corridor)
             :finally (return (push cell cells)))
       (progn (push origin (dead-ends stage))
              (deletef cells origin :count 1)))))
 
-(defmethod carve-corridor (stage neighborhood)
-  (let ((origin (origin neighborhood)))
+(defmethod carve-corridor (stage nh)
+  (let ((origin (origin nh)))
     (push origin (dead-ends stage))
     (carve stage origin :region-id (make-region stage) :feature :corridor)
     (loop :with cells = (list origin)
@@ -42,14 +42,14 @@
 (defmethod create-corridors (stage)
   (convolve stage (layout :rect) #'filter-carvable #'carve-corridor))
 
-(defmethod filter-dead-end (stage neighborhood)
-  (let ((dirs (remove-if #'identity (nmap neighborhood #'carvedp))))
+(defmethod filter-dead-end (stage nh)
+  (let ((dirs (remove-if #'identity (nmap nh #'carvedp))))
     (and (>= (length dirs) 3)
-         (carvedp (origin neighborhood)))))
+         (carvedp (origin nh)))))
 
-(defmethod uncarve-dead-end (stage neighborhood)
-  (uncarve stage (origin neighborhood))
-  (with-accessors ((n n) (s s) (e e) (w w)) neighborhood
+(defmethod uncarve-dead-end (stage nh)
+  (uncarve stage (origin nh))
+  (with-accessors ((n n) (s s) (e e) (w w)) nh
     (multiple-value-bind (dx dy layout)
         (cond ((carvedp n)
                (values 0 1 (layout :h-sense)))
@@ -59,16 +59,16 @@
                (values 1 0 (layout :v-sense)))
               ((carvedp w)
                (values -1 0 (layout :v-sense))))
-      (multiple-value-bind (x y) (stage-coords neighborhood dx dy)
+      (multiple-value-bind (x y) (stage-coords nh dx dy)
         (loop :for cell = (cell stage x y)
-              :for nh = (cell-nh stage cell layout)
-              :for carved = (nfilter nh #'carvedp)
+              :for new-nh = (cell-nh stage cell layout)
+              :for carved = (nfilter new-nh #'carvedp)
               :until carved
               :do (uncarve stage cell)
                   (incf x dx)
                   (incf y dy)
-                  (setf (x nh) x
-                        (y nh) y)
+                  (setf (x new-nh) x
+                        (y new-nh) y)
               :finally (return cell))))))
 
 (defmethod erode-dead-ends (stage)

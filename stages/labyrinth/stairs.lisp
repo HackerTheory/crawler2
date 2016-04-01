@@ -1,7 +1,7 @@
 (in-package :crawler2)
 
-(defmethod staircase-suitable-p ((stage labyrinth) neighborhood)
-  (let ((cell (origin neighborhood)))
+(defmethod staircase-suitable-p ((stage labyrinth) nh)
+  (let ((cell (origin nh)))
     (and (featuresp cell :room)
          (not (featuresp cell :junction))
          (not (adjacent-junction-p stage cell)))))

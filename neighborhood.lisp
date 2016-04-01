@@ -14,8 +14,8 @@
 (defparameter +width+ 0)
 (defparameter +height+ 1)
 
-(defstruct (neighborhood (:conc-name nil)
-                         (:constructor %make-neighborhood))
+(defstruct (nh (:conc-name nil)
+               (:constructor %make-nh))
   stage
   x
   y
@@ -68,299 +68,294 @@
                 :min-a1 (or (second mins) 0)
                 :max-a1 (or (second maxs) 1)))
 
-(defun stage-coords (neighborhood nx ny)
-  (with-slots (x y) neighborhood
+(defun stage-coords (nh nx ny)
+  (with-slots (x y) nh
     (values (+ x nx) (+ y ny))))
 
-(defun neighborhoodp (neighborhood)
-  (when (eq (type-of neighborhood) 'neighborhood)
-    neighborhood))
+(defun nh-p (nh)
+  (when (eq (type-of nh) 'h)
+    nh))
 
-(defun nmap (neighborhood func &rest args)
-  (apply (map-fn neighborhood) neighborhood func args))
+(defun nmap (nh func &rest args)
+  (apply (map-fn nh) nh func args))
 
-(defun nsetp (neighborhood x y)
-  (funcall (set-fn neighborhood) neighborhood x y))
+(defun nsetp (nh x y)
+  (funcall (set-fn nh) nh x y))
 
-(defun nfilter (neighborhood filter)
-  (remove nil (nmap neighborhood (lambda (x) (when (funcall filter x) x)))))
+(defun nfilter (nh filter)
+  (remove nil (nmap nh (lambda (x) (when (funcall filter x) x)))))
 
-(defun nref (neighborhood x y)
-  (with-slots (stage) neighborhood
-    (when (nsetp neighborhood x y)
-      (multiple-value-bind (stage-x stage-y) (stage-coords neighborhood x y)
-        (valid-cell-p stage stage-x stage-y)))))
+(defun nref (nh x y)
+  (with-slots (stage) nh
+    (when (nsetp nh x y)
+      (multiple-value-bind (sx sy) (stage-coords nh x y)
+        (valid-cell-p stage sx sy)))))
 
-(defun origin (neighborhood)
-  (nref neighborhood 0 0))
+(defun origin (nh)
+  (nref nh 0 0))
 
-(defun n (neighborhood &optional (distance 1))
-  (nref neighborhood 0 distance))
+(defun n (nh &optional (distance 1))
+  (nref nh 0 distance))
 
-(defun nw (neighborhood &optional (distance 1))
-  (nref neighborhood (- distance) distance))
+(defun nw (nh &optional (distance 1))
+  (nref nh (- distance) distance))
 
-(defun w (neighborhood &optional (distance 1))
-  (nref neighborhood (- distance) 0))
+(defun w (nh &optional (distance 1))
+  (nref nh (- distance) 0))
 
-(defun sw (neighborhood &optional (distance 1))
-  (nref neighborhood (- distance) (- distance)))
+(defun sw (nh &optional (distance 1))
+  (nref nh (- distance) (- distance)))
 
-(defun s (neighborhood &optional (distance 1))
-  (nref neighborhood 0 (- distance)))
+(defun s (nh &optional (distance 1))
+  (nref nh 0 (- distance)))
 
-(defun se (neighborhood &optional (distance 1))
-  (nref neighborhood distance (- distance)))
+(defun se (nh &optional (distance 1))
+  (nref nh distance (- distance)))
 
-(defun e (neighborhood &optional (distance 1))
-  (nref neighborhood distance 0))
+(defun e (nh &optional (distance 1))
+  (nref nh distance 0))
 
-(defun ne (neighborhood &optional (distance 1))
-  (nref neighborhood distance distance))
+(defun ne (nh &optional (distance 1))
+  (nref nh distance distance))
 
-(defun make-neighborhood (set-fn map-fn extent-args)
+(defun make-nh (set-fn map-fn extent-args)
   (lambda (stage x y)
-    (%make-neighborhood :stage stage
-                        :x x
-                        :y y
-                        :extent (apply #'make-extent extent-args)
-                        :set-fn set-fn
-                        :map-fn map-fn)))
+    (%make-nh :stage stage
+              :x x
+              :y y
+              :extent (apply #'make-extent extent-args)
+              :set-fn set-fn
+              :map-fn map-fn)))
 
 (defun cell-nh (stage cell layout)
   (with-slots (x y) cell
     (funcall layout stage x y)))
 
 (defmethod layout ((name (eql :h-sense)) &rest extent-args)
-  (make-neighborhood #'nset-h-sense #'nmap-h-sense extent-args))
+  (make-nh #'nset-h-sense #'nmap-h-sense extent-args))
 
 (defmethod layout ((name (eql :v-sense)) &rest extent-args)
-  (make-neighborhood #'nset-v-sense #'nmap-v-sense extent-args))
+  (make-nh #'nset-v-sense #'nmap-v-sense extent-args))
 
 (defmethod layout ((name (eql :orthogonal)) &rest extent-args)
-  (make-neighborhood #'nset-orthogonal #'nmap-orthogonal extent-args))
+  (make-nh #'nset-orthogonal #'nmap-orthogonal extent-args))
 
 (defmethod layout ((name (eql :diagonal)) &rest extent-args)
-  (make-neighborhood #'nset-diagonal #'nmap-diagonal extent-args))
+  (make-nh #'nset-diagonal #'nmap-diagonal extent-args))
 
 (defmethod layout ((name (eql :ellipse)) &rest extent-args)
-  (make-neighborhood #'nset-ellipse #'nmap-default extent-args))
+  (make-nh #'nset-ellipse #'nmap-default extent-args))
 
 (defmethod layout ((name (eql :ellipse-outline)) &rest extent-args)
-  (make-neighborhood #'nset-ellipse-outline #'nmap-default extent-args))
+  (make-nh #'nset-ellipse-outline #'nmap-default extent-args))
 
 (defmethod layout ((name (eql :ellipse-outline+origin)) &rest extent-args)
-  (make-neighborhood #'nset-ellipse-outline+origin #'nmap-default extent-args))
+  (make-nh #'nset-ellipse-outline+origin #'nmap-default extent-args))
 
 (defmethod layout ((name (eql :rect)) &rest extent-args)
-  (make-neighborhood #'nset-rect #'nmap-rect extent-args))
+  (make-nh #'nset-rect #'nmap-rect extent-args))
 
 (defmethod layout ((name (eql :rect-outline)) &rest extent-args)
-  (make-neighborhood #'nset-rect-outline #'nmap-rect-outline extent-args))
+  (make-nh #'nset-rect-outline #'nmap-rect-outline extent-args))
 
-(defmethod layout ((layout (eql :rect-outline+origin)) &rest extent-args)
-  (make-neighborhood #'nset-rect-outline+origin #'nmap-rect-outline+origin extent-args))
+(defmethod layout ((name (eql :rect-outline+origin)) &rest extent-args)
+  (make-nh #'nset-rect-outline+origin #'nmap-rect-outline+origin extent-args))
 
 (defun nh-realize (nh-generator stage x y)
   (funcall nh-generator stage x y))
 
-(defun nset-h-sense (neighborhood x y)
+(defun nset-h-sense (nh x y)
   (and (zerop y)
-       (<= (abs x) (axis-max (extent neighborhood) +nd-extent+))
+       (<= (abs x) (axis-max (extent nh) +nd-extent+))
        (not (zerop x))))
 
-(defun nmap-h-sense (neighborhood func)
+(defun nmap-h-sense (nh func)
   (let ((results)
-        (max (axis-max (extent neighborhood) +nd-extent+)))
+        (max (axis-max (extent nh) +nd-extent+)))
     (loop :for x :from (- max) :below 0
-       :for cell = (nref neighborhood x 0)
+       :for cell = (nref nh x 0)
        :when cell
        :do (push (funcall func cell) results))
     (loop :for x :from 1 :to max
-       :for cell = (nref neighborhood x 0)
+       :for cell = (nref nh x 0)
        :when cell
        :do (push (funcall func cell) results))
     results))
 
-(defun nset-v-sense (neighborhood x y)
+(defun nset-v-sense (nh x y)
   (and (zerop x)
-       (<= (abs y) (axis-max (extent neighborhood) +nd-extent+))
+       (<= (abs y) (axis-max (extent nh) +nd-extent+))
        (not (zerop y))))
 
-(defun nmap-v-sense (neighborhood func)
+(defun nmap-v-sense (nh func)
   (let ((results)
-        (max (axis-max (extent neighborhood) +nd-extent+)))
+        (max (axis-max (extent nh) +nd-extent+)))
     (loop :for y :from (- max) :below 0
-       :for cell = (nref neighborhood 0 y)
+       :for cell = (nref nh 0 y)
        :when cell
        :do (push (funcall func cell) results))
     (loop :for y :from 1 :to max
-       :for cell = (nref neighborhood 0 y)
+       :for cell = (nref nh 0 y)
        :when cell
        :do (push (funcall func cell) results))
     results))
 
-(defun nset-orthogonal (neighborhood x y)
-  (let ((maximum (axis-max (extent neighborhood) +nd-extent+)))
+(defun nset-orthogonal (nh x y)
+  (let ((maximum (axis-max (extent nh) +nd-extent+)))
     (and (<= (abs x) maximum)
          (<= (abs y) maximum)
          (or (and (zerop x) (zerop y))
              (and (zerop x) (not (zerop y)))
              (and (not (zerop x)) (zerop y))))))
 
-(defun nmap-orthogonal (neighborhood func)
+(defun nmap-orthogonal (nh func)
   (let ((results)
-        (max (axis-max (extent neighborhood) +nd-extent+)))
+        (max (axis-max (extent nh) +nd-extent+)))
     (loop :for y :from (- max) :to max
-       :for cell = (nref neighborhood 0 y)
+       :for cell = (nref nh 0 y)
        :when cell
        :do (push (funcall func cell) results))
     (loop :for x :from (- max) :below 0
-       :for cell = (nref neighborhood x 0)
+       :for cell = (nref nh x 0)
        :when cell
        :do (push (funcall func cell) results))
     (loop :for x :from 1 :to max
-       :for cell = (nref neighborhood x 0)
+       :for cell = (nref nh x 0)
        :when cell
        :do (push (funcall func cell) results))
     results))
 
-(defun nset-diagonal (neighborhood x y)
-  (let ((maximum (axis-max (extent neighborhood) +nd-extent+)))
+(defun nset-diagonal (nh x y)
+  (let ((maximum (axis-max (extent nh) +nd-extent+)))
     (and (<= (abs x) maximum)
          (<= (abs y) maximum)
          (= (abs x) (abs y)))))
 
-(defun nmap-diagonal (neighborhood func)
+(defun nmap-diagonal (nh func)
   (let ((results)
-        (max (axis-max (extent neighborhood) +nd-extent+)))
+        (max (axis-max (extent nh) +nd-extent+)))
     (loop :for x :from (- max) :to max
-       :for cell = (nref neighborhood x (- x))
+       :for cell = (nref nh x (- x))
        :when cell
        :do (push (funcall func cell) results))
     (loop :for x :from (- max) :below 0
-       :for cell = (nref neighborhood x x)
+       :for cell = (nref nh x x)
        :when cell
        :do (push (funcall func cell) results))
     (loop :for x :from 1 :to max
-       :for cell = (nref neighborhood x x)
+       :for cell = (nref nh x x)
        :when cell
        :do (push (funcall func cell) results))
     results))
 
-(defun nset-ellipse (neighborhood x y)
-  (let ((maximum (axis-max (extent neighborhood) +nd-extent+)))
+(defun nset-ellipse (nh x y)
+  (let ((maximum (axis-max (extent nh) +nd-extent+)))
     (<= (+ (* x x) (* y y))
         (* maximum maximum))))
 
-(defun nset-ellipse-outline (neighborhood x y)
-  (let ((minimum (axis-min (extent neighborhood) +nd-extent+)))
-    (and (nset-ellipse neighborhood x y)
+(defun nset-ellipse-outline (nh x y)
+  (let ((minimum (axis-min (extent nh) +nd-extent+)))
+    (and (nset-ellipse nh x y)
          (not (<= (+ (* x x) (* y y))
                   (* minimum minimum))))))
 
-(defun nset-ellipse-outline+origin (neighborhood x y)
-  (or (nset-ellipse-outline neighborhood x y)
+(defun nset-ellipse-outline+origin (nh x y)
+  (or (nset-ellipse-outline nh x y)
       (and (zerop x)
            (zerop y))))
 
-(defun nset-rect (neighborhood x y)
-  (nset-default neighborhood x y))
+(defun nset-rect (nh x y)
+  (nset-default nh x y))
 
-(defun nmap-rect (neighborhood func)
-  (nmap-default neighborhood func))
+(defun nmap-rect (nh func)
+  (nmap-default nh func))
 
-(defun nset-rect-outline (neighborhood x y)
-  (let ((minimum (axis-min (extent neighborhood) +nd-extent+)))
+(defun nset-rect-outline (nh x y)
+  (let ((minimum (axis-min (extent nh) +nd-extent+)))
     (and
      (not (and (>= x (- minimum))
                (>= y (- minimum))
                (<= x minimum)
                (<= y minimum)))
-     (nset-rect neighborhood x y))))
+     (nset-rect nh x y))))
 
-(defun nmap-rect-outline (neighborhood func)
+(defun nmap-rect-outline (nh func)
   (let ((results))
     (multiple-value-bind (min max)
-        (axis-range (extent neighborhood) +nd-extent+)
+        (axis-range (extent nh) +nd-extent+)
       (loop :for y :from min :to max
          :do (loop :for x :from (- max) :to max
-                :for cell = (nref neighborhood x y)
+                :for cell = (nref nh x y)
                 :when cell
                 :do (push (funcall func cell) results)))
       (loop :for y :from (- max) :to (- min)
          :do (loop :for x :from (- max) :to max
-                :for cell = (nref neighborhood x y)
+                :for cell = (nref nh x y)
                 :when cell
                 :do (push (funcall func cell) results)))
       (loop :for y :from (1+ (- min)) :below min
          :do (loop :for x :from (- max) :to (- min)
-                :for cell = (nref neighborhood x y)
+                :for cell = (nref nh x y)
                 :when cell
                 :do (push (funcall func cell) results)))
       (loop :for y :from (1+ (- min)) :below min
          :do (loop :for x :from min :to max
-                :for cell = (nref neighborhood x y)
+                :for cell = (nref nh x y)
                 :when cell
                 :do (push (funcall func cell) results)))
       results)))
 
-(defun nset-rect-outline+origin (neighborhood x y)
+(defun nset-rect-outline+origin (nh x y)
   (or (and (zerop x)
            (zerop y))
-      (nset-rect-outline neighborhood x y)))
+      (nset-rect-outline nh x y)))
 
-(defun nmap-rect-outline+origin (neighborhood func)
-  (cons (funcall func (origin neighborhood))
-        (nmap-rect-outline neighborhood func)))
+(defun nmap-rect-outline+origin (nh func)
+  (cons (funcall func (origin nh))
+        (nmap-rect-outline nh func)))
 
-(defun nset-default (neighborhood x y)
-  (let ((maximum (axis-max (extent neighborhood) +nd-extent+)))
+(defun nset-default (nh x y)
+  (let ((maximum (axis-max (extent nh) +nd-extent+)))
     (and (>= x (- maximum))
          (>= y (- maximum))
          (<= x maximum)
          (<= y maximum))))
 
-(defun nmap-default (neighborhood func)
+(defun nmap-default (nh func)
   (let ((results)
-        (max (axis-max (extent neighborhood) +nd-extent+)))
+        (max (axis-max (extent nh) +nd-extent+)))
     (loop :for y :from max :downto (- max)
        :do (loop :for x :from (- max) :to max
-              :for cell = (nref neighborhood x y)
+              :for cell = (nref nh x y)
               :when cell
               :do (push (funcall func cell) results)))
     results))
 
-(defmacro nmap-early-exit-reduction (neighborhood func
-                                     &key (test 'when)
-                                       (reduction 'none)
-                                       (early-exit-continuation nil))
+(defmacro nmap-short (nh func &key (test 'when) (reduce 'none) (return-val nil))
   (let ((block-name (gensym))
         (cell (gensym))
-        (early-exit-continuation-func (gensym)))
-
+        (return-func (gensym)))
     `(block ,block-name
-       (let ((,early-exit-continuation-func ,early-exit-continuation))
-         (,reduction
-          (nmap ,neighborhood
+       (let ((,return-func ,return-val))
+         (,reduce
+          (nmap ,nh
                 (lambda (,cell)
                   (,test (funcall ,func ,cell)
                          (return-from ,block-name
                            (cond
-                             ((eq ,early-exit-continuation-func nil) nil)
-                             ((eq ,early-exit-continuation-func t) t)
-                             ((functionp ,early-exit-continuation-func)
-                              (funcall ,early-exit-continuation-func ,cell))
-                             (t (error "nmap-early-exit-reduction: :early-execute-continuation is a thing of type: '~A' and I don't know what to do with it." (type-of ,early-exit-continuation-func)))))))))))))
+                             ((eq ,return-func nil) nil)
+                             ((eq ,return-func t) t)
+                             ((functionp ,return-func)
+                              (funcall ,return-func ,cell))))))))))))
 
 (defun convolve (stage layout filter effect &key (x1 1) (x2 -1) (y1 1) (y2 -1))
   (with-slots (width height) stage
     (loop :with affectedp
        :for x :from x1 :below (+ width x2)
        :do (loop :for y :from y1 :below (+ height y2)
-              :for neighborhood = (funcall layout stage x y)
-              :when (funcall filter stage neighborhood)
-              :do (let ((value (funcall effect stage neighborhood)))
+              :for nh = (funcall layout stage x y)
+              :when (funcall filter stage nh)
+              :do (let ((value (funcall effect stage nh)))
                     (setf affectedp (or affectedp value))))
        :finally (return affectedp))))
 
@@ -382,24 +377,21 @@
 (defun process (stage layout filter processor &key (items nil items-p) (nh-generator #'identity))
   (loop :with items = (if items-p items (collect stage layout filter))
         :while items
-        :for neighborhood = (funcall nh-generator (pop items))
-        :when (funcall filter stage neighborhood)
-          :do (when-let ((new (funcall processor stage neighborhood)))
+        :for nh = (funcall nh-generator (pop items))
+        :when (funcall filter stage nh)
+          :do (when-let ((new (funcall processor stage nh)))
                 (push new items))))
 
-;; Testing code. Please leave for a while. :)
-(defun display-neighborhood (n)
-  (let ((max-distance (axis-max (extent n) +nd-extent+)))
-    (format t "  NH Display: [x=~A, y=~A] max-distance = ~A~%" (x n) (y n)
+(defun display-nh (nh)
+  (let ((max-distance (axis-max (extent nh) +nd-extent+)))
+    (format t "  NH Display: [x=~A, y=~A] max-distance = ~A~%" (x nh) (y nh)
             max-distance)
     (loop :for y :from max-distance :downto (- max-distance) :do
        (format t "    ")
-       ;; First draw a strip of the neighborhood
        (loop :for x :from (- max-distance) :to max-distance :do
-          (format t "~:[-~;X~]" (nref n x y)))
+          (format t "~:[-~;X~]" (nref nh x y)))
        (format t "~%"))))
 
 (defun display-layout (layout)
-  (let ((nh (nh-realize layout
-                        (make-stage 'labyrinth :width 99 :height 99) 49 49)))
-    (display-neighborhood nh)))
+  (let ((nh (nh-realize layout (make-stage 'labyrinth :width 99 :height 99) 49 49)))
+    (display-nh nh)))
