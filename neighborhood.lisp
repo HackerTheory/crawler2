@@ -327,11 +327,10 @@
 (defun process (stage layout filter processor &key items (nh-generator #'identity))
   (loop :with items = (or items (collect stage layout filter))
         :while items
-        :do (loop :with neighborhood = (funcall nh-generator (pop items))
-                  :while (funcall filter stage neighborhood)
-                  :for new = (funcall processor stage neighborhood)
-                  :when new
-                    :do (push new items))))
+        :for neighborhood = (funcall nh-generator (pop items))
+        :when (funcall filter stage neighborhood)
+          :do (when-let ((new (funcall processor stage neighborhood)))
+                (push new items))))
 
 ;; Testing code. Please leave for a while. :)
 (defun display-neighborhood (n)
