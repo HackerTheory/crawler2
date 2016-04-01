@@ -22,7 +22,7 @@
     (rng 'elt :list results)))
 
 (defmethod carve-direction (stage origin cells)
-  (let ((neighborhood (cell-nh stage origin (layout :orthogonal :maximum 2))))
+  (let ((neighborhood (cell-nh stage origin (layout :orthogonal :maxs '(2)))))
     (if-let ((choice (choose-uncarved stage neighborhood)))
       (loop :for cell :across choice
             :do (carve stage cell :feature :corridor)
