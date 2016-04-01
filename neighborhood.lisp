@@ -166,8 +166,8 @@
   (funcall nh-generator stage x y))
 
 (defun nset-h-sense (neighborhood x y)
-  (declare (ignore y))
-  (and (<= (abs x) (axis-max (extent neighborhood) +nd-extent+))
+  (and (zerop y)
+       (<= (abs x) (axis-max (extent neighborhood) +nd-extent+))
        (not (zerop x))))
 
 (defun nmap-h-sense (neighborhood func)
@@ -184,8 +184,8 @@
     results))
 
 (defun nset-v-sense (neighborhood x y)
-  (declare (ignore x))
-  (and (<= (abs y) (axis-max (extent neighborhood) +nd-extent+))
+  (and (zerop x)
+       (<= (abs y) (axis-max (extent neighborhood) +nd-extent+))
        (not (zerop y))))
 
 (defun nmap-v-sense (neighborhood func)
