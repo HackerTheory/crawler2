@@ -123,7 +123,6 @@
     (%make-neighborhood :stage stage
                         :x x
                         :y y
-                        ;; TODO: FIX ME
                         :extent (apply #'make-extent extent-args)
                         :set-fn set-fn
                         :map-fn map-fn)))
