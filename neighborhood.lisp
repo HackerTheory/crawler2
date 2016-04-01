@@ -72,10 +72,6 @@
   (with-slots (x y) nh
     (values (+ x nx) (+ y ny))))
 
-(defun nh-p (nh)
-  (when (eq (type-of nh) 'h)
-    nh))
-
 (defun nmap (nh func &rest args)
   (apply (map-fn nh) nh func args))
 
