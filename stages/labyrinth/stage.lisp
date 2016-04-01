@@ -13,9 +13,12 @@
    (corridor-windiness :reader corridor-windiness
                        :initarg :corridor-windiness
                        :initform 0)
-   (junction-rate :reader junction-rate
-                  :initarg :junction-rate
-                  :initform 0.05)
+   (loop-rate :reader loop-rate
+              :initarg :loop-rate
+              :initform 0.05)
+   (door-rate :reader door-rate
+              :initarg :door-rate
+              :initform 0.5)
    (rooms :accessor rooms
           :initform nil)
    (dead-ends :accessor dead-ends
@@ -32,11 +35,12 @@
             height (ensure height)))))
 
 (defmethod validate ((stage labyrinth))
-  (with-slots (room-size-min room-size-max room-density corridor-windiness junction-rate) stage
+  (with-slots (room-size-min room-size-max room-density corridor-windiness loop-rate door-rate) stage
     (setf room-size-min (clamp room-size-min 3 99)
           room-size-max (clamp room-size-max room-size-min 99)
           room-density (clamp room-density 0.1 1.0)
-          junction-rate (clamp junction-rate 0 1)
+          loop-rate (clamp loop-rate 0 1)
+          door-rate (clamp door-rate 0 1)
           corridor-windiness (clamp corridor-windiness 0.0 1.0))
     (when (evenp room-size-min)
       (incf room-size-min))

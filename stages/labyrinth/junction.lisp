@@ -15,16 +15,17 @@
   (let ((nh (cell-nh stage cell (layout :orthogonal))))
     (nmap-short
      nh
-     (lambda (x) (featuresp x :junction))
+     (lambda (x) (featuresp x :junction :door))
      :reduce any
      :return-val t)))
 
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
-    (carve stage cell :region-id nil :feature :junction)))
+    (let ((doorp (< (rng 'inc) (door-rate stage))))
+      (carve stage cell :region-id nil :feature (if doorp :door :junction)))))
 
 (defmethod make-extra-junctions ((stage labyrinth) nh)
-  (when (< (rng 'inc) (junction-rate stage))
+  (when (< (rng 'inc) (loop-rate stage))
     (make-junction stage (origin nh))))
 
 (defmethod filter-connectable ((stage labyrinth) nh)
