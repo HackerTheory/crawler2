@@ -26,10 +26,8 @@
            (rgb 0.1 1 0.5))
           ((featuresp cell :door)
            (rgb 0.1 0.5 1))
-          ((featuresp cell :room)
-           (gray 1))
-          ((featuresp cell :corridor :junction)
-           (gray 0.5)))))
+          ((featuresp cell :corridor :room :junction)
+           (gray 1)))))
 
 (defmethod mousebutton-event :after (window state ts button x y)
   (when (and (eq state :MOUSEBUTTONUP)
