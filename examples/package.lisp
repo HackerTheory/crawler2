@@ -7,6 +7,7 @@
   (:import-from #:sketch
                 #:defsketch
                 #:rect
+                #:circle
                 #:with-pen
                 #:make-pen
                 #:gray

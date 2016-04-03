@@ -347,13 +347,13 @@
 (defun convolve (stage layout filter effect &key (x1 1) (x2 -1) (y1 1) (y2 -1))
   (with-slots (width height) stage
     (loop :with affectedp
-       :for x :from x1 :below (+ width x2)
-       :do (loop :for y :from y1 :below (+ height y2)
-              :for nh = (funcall layout stage x y)
-              :when (funcall filter stage nh)
-              :do (let ((value (funcall effect stage nh)))
-                    (setf affectedp (or affectedp value))))
-       :finally (return affectedp))))
+          :for x :from x1 :below (+ width x2)
+          :do (loop :for y :from y1 :below (+ height y2)
+                    :for nh = (nh-realize layout stage x y)
+                    :when (funcall filter stage nh)
+                      :do (let ((value (funcall effect stage nh)))
+                            (setf affectedp (or affectedp value))))
+          :finally (return affectedp))))
 
 (defun collect (stage layout filter &key (x1 1) (x2 -1) (y1 1) (y2 -1))
   (let ((items))

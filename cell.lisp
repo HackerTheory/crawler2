@@ -9,8 +9,6 @@
             :initform nil)
    (region-id :accessor region-id
               :initform nil)
-   (adjacent-regions :accessor adjacent-regions
-                     :initform nil)
    (features :accessor features
              :initform '(:wall))
    (distance :accessor distance

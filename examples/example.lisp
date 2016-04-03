@@ -6,10 +6,11 @@
 
 (defmethod draw ()
   (with-slots (width height) *stage*
-    (background (gray 0.2))
+    (background (gray 0.3))
     (dotimes (x width)
       (dotimes (y height)
-        (draw-cell x y)))))
+        (draw-cell x y)
+        (draw-connector x y)))))
 
 (defmethod draw-cell (x y)
   (with-pen (make-pen :fill (select-color x y))
@@ -17,6 +18,13 @@
           (* y *cell-size*)
           (1- *cell-size*)
           (1- *cell-size*))))
+
+(defmethod draw-connector (x y)
+  (with-pen (make-pen :fill (rgb 1 0 1))
+    (when (featuresp (cell *stage* x y) :connector)
+      (circle (+ (* x *cell-size*) 4)
+              (+ (* y *cell-size*) 4)
+              2))))
 
 (defmethod select-color (x y)
   (let ((cell (cell *stage* x y)))
@@ -26,6 +34,8 @@
            (rgb 0.1 1 0.5))
           ((featuresp cell :door)
            (rgb 0.1 0.5 1))
+          ((featuresp cell :wall :connector)
+           (gray 0.2))
           ((featuresp cell :corridor :room :junction)
            (gray 1)))))
 

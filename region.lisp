@@ -2,7 +2,7 @@
 
 (defstruct (region (:conc-name nil)
                    (:constructor %make-region (id)))
-  id connectors cells)
+  id cells)
 
 (defmethod make-region (stage)
   (with-slots (current-region regions) stage
