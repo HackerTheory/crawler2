@@ -26,6 +26,13 @@
 (defstruct (extent (:conc-name nil)
                    (:constructor %make-extent))
 
+  ;; position of the extent in the NSET coordinate system. This allows
+  ;; "shifting" the extent around like a window in relation to the definition
+  ;; of NSET.
+  ;; TODO: Unused cause I ran out of time, will continue later....
+  cx
+  cy
+
   ;; This would normally be represented as a 2d array of n columns
   ;; representing the extents for each axis in n-dimensions, but it is
   ;; too slow to allocate and initialize that array since millions of
@@ -62,8 +69,10 @@
 ;; They must be the same length. Later we can support fabricating unsupplied
 ;; information with good defaults.
 
-(defun make-extent (&key (mins '(0)) (maxs '(1)))
-  (%make-extent :min-a0 (or (first mins) 0)
+(defun make-extent (&key (cx 0) (cy 0) (mins '(0)) (maxs '(1)))
+  (%make-extent :cx cx
+                :cy cy
+                :min-a0 (or (first mins) 0)
                 :max-a0 (or (first maxs) 1)
                 :min-a1 (or (second mins) 0)
                 :max-a1 (or (second maxs) 1)))
@@ -372,11 +381,11 @@
 
 (defun process (stage layout filter processor &key (items nil items-p) (nh-generator #'identity))
   (loop :with items = (if items-p items (collect stage layout filter))
-        :while items
-        :for nh = (funcall nh-generator (pop items))
-        :when (funcall filter stage nh)
-          :do (when-let ((new (funcall processor stage nh)))
-                (push new items))))
+     :while items
+     :for nh = (funcall nh-generator (pop items))
+     :when (funcall filter stage nh)
+     :do (when-let ((new (funcall processor stage nh)))
+           (push new items))))
 
 (defun display-nh (nh)
   (let ((max-distance (axis-max (extent nh) +nd-extent+)))

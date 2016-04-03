@@ -1,6 +1,42 @@
 (in-package #:crawler2)
 
 
+;; Define a class which knows how many bits we have in a bitset.
+;; We use the size for especially negate operations, and to truncate all
+;; bit operations into that bit size.
+
+;; Not used in the feature-set class yet, just stored here since we will need it
+;; if we manage to use this code. We'll beed this in order to deal with
+;; complement properly.
+(defclass bit-set ()
+  ((bit-size :initarg :bit-size
+             :initform NIL
+             :accessor bit-size)))
+
+(defun make-bit-set (bit-size)
+  (make-instance 'bit-set :bit-size bit-size))
+
+(defmethod bs-and ((bit-set bit-set) &rest vals)
+  (logand (reduce #'logand vals) (1- (expt 2 (bit-size bit-set)))))
+
+(defmethod bs-ior ((bit-set bit-set) &rest vals)
+  (logand (reduce #'logior vals) (1- (expt 2 (bit-size bit-set)))))
+
+(defmethod bs-not ((bit-set bit-set) val)
+  (logand (lognot val) (1- (expt 2 (bit-size bit-set)))))
+
+(defmethod bs-string ((bit-set bit-set) val)
+  (format nil (format nil "#b~~~D,'0B" (bit-size bit-set)) val))
+
+(defun test-bit-set ()
+  (let* ((bs (make-bit-set 32))
+         (val (bs-ior bs 1 2 4 8 32)))
+
+    (format t "(bs-not ~A) -> ~A~%"
+            (bs-string bs val)
+            (bs-string bs (bs-not bs val)))))
+
+
 ;; This is a rough draft of an alternate method to store feature sets
 ;; and do set theory with them. I don't know how well this scales, for
 ;; several hundreds of features, it might break down badly. It should
