@@ -13,6 +13,8 @@
            #:height
            #:grid
            #:cell
+           #:x
+           #:y
            #:carvedp
            #:region-id
            #:featuresp))
