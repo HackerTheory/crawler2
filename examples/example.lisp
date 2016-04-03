@@ -1,7 +1,6 @@
 (in-package :crawler2-examples)
 
 (defvar *stage* nil)
-(defvar *attrs* nil)
 (defvar *cell-size* 9)
 
 (defmethod draw ()
@@ -25,9 +24,9 @@
   (with-slots (x y) cell
     (with-pen (make-pen :fill (rgb 1 0 1))
       (when (featuresp (cell *stage* x y) :connector)
-        (circle (+ (* x *cell-size*) 4)
-                (+ (* y *cell-size*) 4)
-                2)))))
+        (circle (+ (* x *cell-size*) (floor (/ *cell-size* 2)))
+                (+ (* y *cell-size*) (floor (/ *cell-size* 2)))
+                (/ *cell-size* 6))))))
 
 (defmethod select-color (cell)
   (cond ((featuresp cell :stairs-up)
@@ -49,13 +48,11 @@
     (regenerate window)))
 
 (defmethod close-window :after (window)
-  (setf *stage* nil
-        *attrs* nil))
+  (setf *stage* nil))
 
 (defmethod generate (stage-type attrs)
   (setf *stage* (apply #'make-stage stage-type attrs)))
 
 (defmethod run :around (stage-type &rest attrs)
-  (setf *attrs* attrs)
-  (generate stage-type *attrs*)
+  (generate stage-type attrs)
   (call-next-method))

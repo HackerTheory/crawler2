@@ -5,11 +5,11 @@
                               :height (* *cell-size* (height *stage*))
                               :y-axis :up
                               :debug :scancode-grave)
-    ()
+    ((attrs))
   (draw))
 
 (defmethod regenerate ((window example-labyrinth))
-  (generate 'labyrinth *attrs*))
+  (generate 'labyrinth (attrs window)))
 
-(defmethod run ((stage-type (eql 'labyrinth)) &key)
-  (make-instance 'example-labyrinth))
+(defmethod run ((stage-type (eql 'labyrinth)) &rest attrs)
+  (make-instance 'example-labyrinth :attrs attrs))
