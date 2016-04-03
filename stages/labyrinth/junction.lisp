@@ -11,7 +11,8 @@
 (defmethod make-junction ((stage labyrinth) cell)
   (unless (adjacent-junction-p stage cell)
     (let ((doorp (< (rng 'inc) (door-rate stage))))
-      (carve stage cell :region-id nil :feature (if doorp :door :junction)))))
+      (carve stage cell :region-id nil :feature (if doorp :door :junction))
+      (remove-feature cell :connector))))
 
 (defmethod filter-connectable ((stage labyrinth) nh)
   (with-accessors ((n n) (s s) (e e) (w w)) nh
@@ -50,10 +51,12 @@
             :for current = (dequeue queue)
             :do (setf (gethash current visited) t)
                 (loop :for edge :in (gethash current graph)
-                      :for connectors = (gethash (list current edge) connections)
+                      :for pair = (list current edge)
+                      :for connectors = (gethash pair connections)
                       :unless (gethash edge visited)
                         :do (let ((cell (rng 'elt :list connectors)))
                               (make-junction stage cell)
+                              (deletef (gethash pair connections) cell)
                               (setf (gethash edge visited) t)
                               (enqueue edge queue)))))))
 
