@@ -57,8 +57,6 @@
                                :unless (gethash edge visited)
                                  :do (let ((cell (rng 'elt :list connectors)))
                                        (make-junction stage cell)
-                                       (deletef (gethash pair connections) cell)
-                                       (deletef (gethash current graph) edge)
                                        (setf (gethash edge visited) t)
                                        (enqueue edge queue))))))
            (carve-loops ()

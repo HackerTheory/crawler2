@@ -178,13 +178,13 @@
   (let ((results)
         (max (axis-max (extent nh) +nd-extent+)))
     (loop :for x :from (- max) :below 0
-       :for cell = (nref nh x 0)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x 0)
+          :when cell
+            :do (push (funcall func cell) results))
     (loop :for x :from 1 :to max
-       :for cell = (nref nh x 0)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x 0)
+          :when cell
+            :do (push (funcall func cell) results))
     results))
 
 (defun nset-v-sense (nh x y)
@@ -196,19 +196,19 @@
   (let ((results)
         (max (axis-max (extent nh) +nd-extent+)))
     (loop :for y :from (- max) :below 0
-       :for cell = (nref nh 0 y)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh 0 y)
+          :when cell
+            :do (push (funcall func cell) results))
     (loop :for y :from 1 :to max
-       :for cell = (nref nh 0 y)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh 0 y)
+          :when cell
+            :do (push (funcall func cell) results))
     results))
 
 (defun nset-orthogonal (nh x y)
-  (let ((maximum (axis-max (extent nh) +nd-extent+)))
-    (and (<= (abs x) maximum)
-         (<= (abs y) maximum)
+  (let ((max (axis-max (extent nh) +nd-extent+)))
+    (and (<= (abs x) max)
+         (<= (abs y) max)
          (or (and (zerop x) (zerop y))
              (and (zerop x) (not (zerop y)))
              (and (not (zerop x)) (zerop y))))))
@@ -217,52 +217,52 @@
   (let ((results)
         (max (axis-max (extent nh) +nd-extent+)))
     (loop :for y :from (- max) :to max
-       :for cell = (nref nh 0 y)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh 0 y)
+          :when cell
+            :do (push (funcall func cell) results))
     (loop :for x :from (- max) :below 0
-       :for cell = (nref nh x 0)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x 0)
+          :when cell
+            :do (push (funcall func cell) results))
     (loop :for x :from 1 :to max
-       :for cell = (nref nh x 0)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x 0)
+          :when cell
+            :do (push (funcall func cell) results))
     results))
 
 (defun nset-diagonal (nh x y)
-  (let ((maximum (axis-max (extent nh) +nd-extent+)))
-    (and (<= (abs x) maximum)
-         (<= (abs y) maximum)
+  (let ((max (axis-max (extent nh) +nd-extent+)))
+    (and (<= (abs x) max)
+         (<= (abs y) max)
          (= (abs x) (abs y)))))
 
 (defun nmap-diagonal (nh func)
   (let ((results)
         (max (axis-max (extent nh) +nd-extent+)))
     (loop :for x :from (- max) :to max
-       :for cell = (nref nh x (- x))
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x (- x))
+          :when cell
+            :do (push (funcall func cell) results))
     (loop :for x :from (- max) :below 0
-       :for cell = (nref nh x x)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x x)
+          :when cell
+            :do (push (funcall func cell) results))
     (loop :for x :from 1 :to max
-       :for cell = (nref nh x x)
-       :when cell
-       :do (push (funcall func cell) results))
+          :for cell = (nref nh x x)
+          :when cell
+            :do (push (funcall func cell) results))
     results))
 
 (defun nset-ellipse (nh x y)
-  (let ((maximum (axis-max (extent nh) +nd-extent+)))
+  (let ((max (axis-max (extent nh) +nd-extent+)))
     (<= (+ (* x x) (* y y))
-        (* maximum maximum))))
+        (* max max))))
 
 (defun nset-ellipse-outline (nh x y)
-  (let ((minimum (axis-min (extent nh) +nd-extent+)))
+  (let ((min (axis-min (extent nh) +nd-extent+)))
     (and (nset-ellipse nh x y)
          (not (<= (+ (* x x) (* y y))
-                  (* minimum minimum))))))
+                  (* min min))))))
 
 (defun nset-ellipse-outline+origin (nh x y)
   (or (nset-ellipse-outline nh x y)
@@ -276,12 +276,12 @@
   (nmap-default nh func))
 
 (defun nset-rect-outline (nh x y)
-  (let ((minimum (axis-min (extent nh) +nd-extent+)))
+  (let ((min (axis-min (extent nh) +nd-extent+)))
     (and
-     (not (and (>= x (- minimum))
-               (>= y (- minimum))
-               (<= x minimum)
-               (<= y minimum)))
+     (not (and (>= x (- min))
+               (>= y (- min))
+               (<= x min)
+               (<= y min)))
      (nset-rect nh x y))))
 
 (defun nmap-rect-outline (nh func)
@@ -289,25 +289,25 @@
     (multiple-value-bind (min max)
         (axis-range (extent nh) +nd-extent+)
       (loop :for y :from min :to max
-         :do (loop :for x :from (- max) :to max
-                :for cell = (nref nh x y)
-                :when cell
-                :do (push (funcall func cell) results)))
+            :do (loop :for x :from (- max) :to max
+                      :for cell = (nref nh x y)
+                      :when cell
+                        :do (push (funcall func cell) results)))
       (loop :for y :from (- max) :to (- min)
-         :do (loop :for x :from (- max) :to max
-                :for cell = (nref nh x y)
-                :when cell
-                :do (push (funcall func cell) results)))
+            :do (loop :for x :from (- max) :to max
+                      :for cell = (nref nh x y)
+                      :when cell
+                        :do (push (funcall func cell) results)))
       (loop :for y :from (1+ (- min)) :below min
-         :do (loop :for x :from (- max) :to (- min)
-                :for cell = (nref nh x y)
-                :when cell
-                :do (push (funcall func cell) results)))
+            :do (loop :for x :from (- max) :to (- min)
+                      :for cell = (nref nh x y)
+                      :when cell
+                        :do (push (funcall func cell) results)))
       (loop :for y :from (1+ (- min)) :below min
-         :do (loop :for x :from min :to max
-                :for cell = (nref nh x y)
-                :when cell
-                :do (push (funcall func cell) results)))
+            :do (loop :for x :from min :to max
+                      :for cell = (nref nh x y)
+                      :when cell
+                        :do (push (funcall func cell) results)))
       results)))
 
 (defun nset-rect-outline+origin (nh x y)
@@ -320,20 +320,20 @@
         (nmap-rect-outline nh func)))
 
 (defun nset-default (nh x y)
-  (let ((maximum (axis-max (extent nh) +nd-extent+)))
-    (and (>= x (- maximum))
-         (>= y (- maximum))
-         (<= x maximum)
-         (<= y maximum))))
+  (let ((max (axis-max (extent nh) +nd-extent+)))
+    (and (>= x (- max))
+         (>= y (- max))
+         (<= x max)
+         (<= y max))))
 
 (defun nmap-default (nh func)
   (let ((results)
         (max (axis-max (extent nh) +nd-extent+)))
     (loop :for y :from max :downto (- max)
-       :do (loop :for x :from (- max) :to max
-              :for cell = (nref nh x y)
-              :when cell
-              :do (push (funcall func cell) results)))
+          :do (loop :for x :from (- max) :to max
+                    :for cell = (nref nh x y)
+                    :when cell
+                      :do (push (funcall func cell) results)))
     results))
 
 (defmacro nmap-short (nh func &key (test 'when) (reduce 'none) (return-val nil))

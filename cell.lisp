@@ -50,7 +50,8 @@
         (region-id cell) region-id)
   (when-let ((region (get-region stage region-id)))
     (pushnew cell (cells region)))
-  (add-feature cell feature))
+  (add-feature cell feature)
+  (remove-feature cell :wall))
 
 (defmethod uncarve (stage cell)
   (with-slots (carvedp region-id features) cell
@@ -67,7 +68,6 @@
   (deletef (features cell) feature))
 
 (defmethod add-feature (cell feature)
-  (remove-feature cell :wall)
   (pushnew feature (features cell)))
 
 (defmacro profile-cell-calls (msg &body body)
