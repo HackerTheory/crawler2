@@ -46,7 +46,7 @@
   (multiple-value-bind (graph size) (make-connection-graph connections)
     (flet ((carve-tree ()
              (let ((queue (make-queue size)))
-               (enqueue (current-region stage) queue)
+               (enqueue *region* queue)
                (loop :with visited = (make-hash-table)
                      :until (queue-empty-p queue)
                      :for current = (dequeue queue)

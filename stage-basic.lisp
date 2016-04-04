@@ -13,9 +13,7 @@
          :initarg :seed
          :initform (make-seed))
    (regions :accessor regions
-            :initform (make-hash-table))
-   (current-region :accessor current-region
-                   :initform 0)))
+            :initform (make-hash-table))))
 
 (defmethod make-grid (stage)
   (with-slots (width height grid) stage
@@ -38,7 +36,8 @@
 (defmethod build (stage))
 
 (defmethod make-stage (stage-type &rest attrs)
-  (let ((stage (apply #'make-instance stage-type attrs)))
+  (let ((stage (apply #'make-instance stage-type attrs))
+        (*region* *region*))
     (make-rng stage)
     (validate stage)
     (make-grid stage)

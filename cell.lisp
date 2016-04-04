@@ -45,7 +45,7 @@
           (= x (1- width))
           (= y (1- height))))))
 
-(defmethod carve (stage cell &key (region-id (current-region stage)) feature)
+(defmethod carve (stage cell &key (region-id *region*) feature)
   (setf (carvedp cell) t
         (region-id cell) region-id)
   (when-let ((region (get-region stage region-id)))

@@ -3,7 +3,9 @@
 (defclass maze (stage)
   ((corridor-windiness :accessor corridor-windiness
                        :initarg :corridor-windiness
-                       :initform 0)))
+                       :initform 0)
+   (dead-ends :accessor dead-ends
+              :initform nil)))
 
 (defmethod ensure-dimensions ((stage maze))
   (with-slots (width height) stage
