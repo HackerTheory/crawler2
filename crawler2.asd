@@ -21,12 +21,12 @@
    (:file "cell")
    (:module "stages"
     :components
-    ((:module "labyrinth"
+    ((:module "maze"
+      :components
+      ((:file "stage")))
+     (:module "labyrinth"
       :components
       ((:file "stage")
        (:file "junction")
        (:file "room")
-       (:file "stairs")))
-     (:module "maze"
-      :components
-      ((:file "stage")))))))
+       (:file "stairs")))))))

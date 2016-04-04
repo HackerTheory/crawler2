@@ -1,6 +1,6 @@
 (in-package :crawler2)
 
-(defclass labyrinth (stage)
+(defclass labyrinth (maze)
   ((room-size-min :reader room-size-min
                   :initarg :room-size-min
                   :initform 3)
@@ -10,9 +10,6 @@
    (room-density :reader room-density
                  :initarg :room-density
                  :initform 0.65)
-   (corridor-windiness :reader corridor-windiness
-                       :initarg :corridor-windiness
-                       :initform 0)
    (loop-rate :reader loop-rate
               :initarg :loop-rate
               :initform 0.05)
@@ -20,9 +17,7 @@
               :initarg :door-rate
               :initform 0.5)
    (rooms :accessor rooms
-          :initform nil)
-   (dead-ends :accessor dead-ends
-              :initform nil)))
+          :initform nil)))
 
 (defmethod ensure-dimensions ((stage labyrinth))
   (with-slots (width height room-size-min room-size-max) stage

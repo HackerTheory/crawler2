@@ -7,8 +7,7 @@
    (height :reader height
            :initarg :height
            :initform 49)
-   (grid :accessor grid
-         :initarg :grid)
+   (grid :reader grid)
    (seed :reader seed
          :initarg :seed
          :initform (make-seed))
