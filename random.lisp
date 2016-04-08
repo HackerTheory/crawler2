@@ -26,7 +26,7 @@
   (random-range-inclusive *rng* min max))
 
 (defmethod rng ((method (eql 'odd)) &key (min 1) (max 3))
-  (let ((num (rng 'inc :min min :max max)))
+  (let ((num (rng 'int :min min :max max)))
     (if (evenp num) (decf num) num)))
 
 (defmethod rng ((method (eql 'bool)) &key (probability 0.5))
