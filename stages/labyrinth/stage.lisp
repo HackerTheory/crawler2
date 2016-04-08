@@ -46,6 +46,7 @@
   (format t "Creating labyrinth.~%")
   (profile-cell-calls "  Adding Rooms" (add-rooms stage))
   (profile-cell-calls "  Carving Corridors" (create-corridors stage))
+  (profile-cell-calls "  Building MST" (build-mst stage))
   (profile-cell-calls "  Connecting Regions" (connect-regions stage))
   (profile-cell-calls "  Eroding Dead Ends" (erode-dead-ends stage))
   (profile-cell-calls "  Adding Staircases" (create-stairs stage)))

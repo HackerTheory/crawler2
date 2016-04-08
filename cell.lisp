@@ -73,6 +73,6 @@
 (defmacro profile-cell-calls (msg &body body)
   (let ((result (gensym)))
     `(let ((*cell-calls* 0))
-       (let ((,result (progn ,@body)))
+       (let ((,result (multiple-value-list (progn ,@body))))
          (format t "~A: Cells looked up: ~A~%" ,msg *cell-calls*)
-         ,result))))
+         (values-list ,result)))))
