@@ -71,6 +71,6 @@
       (carve-loops))))
 
 (defmethod connect-regions (stage)
-  (let ((connections (make-hash-table :test 'equal)))
+  (let ((connections (make-hash-table :test 'equal :size 512)))
     (convolve stage (layout :orthogonal) #'filter-connectable (connect connections))
     (carve-junctions stage connections)))
