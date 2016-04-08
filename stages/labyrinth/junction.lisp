@@ -35,7 +35,7 @@
       (add-feature cell :connector))))
 
 (defun make-connection-graph (connections)
-  (loop :with graph = (make-hash-table)
+  (loop :with graph = (make-hash-table :size 512)
         :with size = 0
         :for (region-a region-b) :in (hash-table-keys connections)
         :do (pushnew region-b (gethash region-a graph))
@@ -47,7 +47,7 @@
     (flet ((carve-tree ()
              (let ((queue (make-queue size)))
                (enqueue (current-region stage) queue)
-               (loop :with visited = (make-hash-table)
+               (loop :with visited = (make-hash-table :size 512)
                      :until (queue-empty-p queue)
                      :for current = (dequeue queue)
                      :do (setf (gethash current visited) t)
