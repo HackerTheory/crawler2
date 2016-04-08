@@ -1,5 +1,9 @@
 (in-package :crawler2)
 
+(defstruct connectivity
+  mst
+  potential-connections)
+
 (defclass stage ()
   ((width :reader width
           :initarg :width
@@ -12,7 +16,9 @@
          :initarg :seed
          :initform (make-seed))
    (regions :accessor regions
-            :initform (make-hash-table))))
+            :initform (make-hash-table))
+   (connectivity :accessor connectivity
+                 :initarg :connectivity)))
 
 (defmethod make-grid (stage)
   (with-slots (width height grid) stage
