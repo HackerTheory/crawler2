@@ -22,6 +22,13 @@
 (defmethod make-cell (stage x y &key)
   (setf (cell stage x y) (make-instance 'cell :x x :y y)))
 
+(defmethod cell (stage x y &key)
+  (incf *cell-calls*)
+  (aref (grid stage) x y))
+
+(defmethod (setf cell) (value stage x y &key)
+  (setf (aref (grid stage) x y) value))
+
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
     (when (and (not (minusp x))
@@ -29,13 +36,6 @@
                (< x width)
                (< y height))
       (cell stage x y))))
-
-(defmethod cell (stage x y &key)
-  (incf *cell-calls*)
-  (aref (grid stage) x y))
-
-(defmethod (setf cell) (value stage x y &key)
-  (setf (aref (grid stage) x y) value))
 
 (defmethod stage-border-p (stage cell)
   (with-slots (width height) stage

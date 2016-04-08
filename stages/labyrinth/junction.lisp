@@ -30,8 +30,7 @@
     (let ((regions (remove nil (nmap nh #'region-id)))
           (cell (origin nh)))
       (pushnew cell (gethash regions connections))
-      (setf (gethash (reverse regions) connections)
-            (gethash regions connections))
+      (setf (gethash (reverse regions) connections) (gethash regions connections))
       (add-feature cell :connector))))
 
 (defun make-connection-graph (connections)
