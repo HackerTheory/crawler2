@@ -26,7 +26,9 @@
     cell))
 
 (defmethod choose-downstairs ((stage labyrinth) region-id)
-  (rng 'elt :list (cells (get-region stage region-id))))
+  (loop :for cell = (rng 'elt :list (cells (get-region stage region-id)))
+        :while (adjacent-junction-p stage cell)
+        :finally (return cell)))
 
 (defmethod make-downstairs ((stage labyrinth) source)
   (let ((queue (make-queue (* (width stage) (height stage))))

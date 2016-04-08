@@ -23,7 +23,8 @@
   (with-slots (width height room-size-min room-size-max room-density) stage
     (let* ((min (expt room-size-min 2))
            (max (expt room-size-max 2))
-           (average (/ (abs (- max min)) 2)))
+           (distance (abs (- max min)))
+           (average (if (zerop distance) max (/ distance 2))))
       (floor (* (/ (* width height) average) room-density)))))
 
 (defmethod intersectsp ((source labyrinth-room) (target labyrinth-room))
