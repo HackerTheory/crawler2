@@ -4,8 +4,8 @@
   :version "0.1"
   :license "MIT"
   :description "Crawler stage examples."
-  :depends-on (#:crawler2
-               #:sketch)
+  :depends-on (#:sketch
+               #:crawler2)
   :serial t
   :pathname "examples"
   :components ((:file "package")
