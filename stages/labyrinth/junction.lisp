@@ -74,12 +74,125 @@
     (convolve stage (layout :orthogonal) #'filter-connectable (connect connections))
     (carve-junctions stage connections)))
 
+(defmethod connect-regions-new (stage)
+  ;; Phase 1: Make junctions simply to honor the MST.
+
+  ;; Phase 2: Relax the MST by adding junctions which cause cycles.
+
+  nil
+  )
 
 
 
 
+(defun bfs (adjacency-graph root func &key (successors
+                                            (lambda (node adj-graph)
+                                              (gethash node adj-graph))))
+  (let ((queue (make-queue 1024)) ;; TODO: Having a constant here sucks.
+        (visited (make-hash-table))
+        (results ()))
 
-;; It might be worth to put this into spanning-tree.lisp or something....
+    (setf (gethash root visited) t)
+    (push (funcall func root) results)
+    (enqueue (list root 0) queue)
+    (format t ">bfs (~A ~A)~%" root 0)
+
+    ;; Perform the BFS
+    (loop :until (queue-empty-p queue) :do
+       (destructuring-bind (parent distance) (dequeue queue)
+         (loop :for child :in (funcall successors parent adjacency-graph)
+            :unless (gethash child visited)
+            :do
+            (setf (gethash child visited) t)
+            (push (funcall func child) results)
+            (format t ">bfs (~A ~A)~%" child (1+ distance))
+            (enqueue (list child (1+ distance)) queue))))
+
+    ;; returned in BFS level-order traversal.
+    (nreverse results)))
+
+(defun dfs (adjacency-graph root func &key (successors
+                                            (lambda (node adj-graph)
+                                              (gethash node adj-graph))))
+  (let ((stack ())
+        (visited (make-hash-table))
+        (results ()))
+
+    (push (list root 0) stack)
+    (format t ">dfs (~A ~A)~%" root 0)
+
+    ;; Perform the DFS
+    (loop :until (null stack) :do
+       (destructuring-bind (node distance) (pop stack)
+         (format t ">dfs-pop (~A ~A)~%" node distance)
+         (unless (gethash node visited)
+           (setf (gethash node visited) t)
+           (format t ">dfs-visit (~A ~A)~%" node distance)
+           (push (funcall func node) results)
+           (loop :for child :in (funcall successors node adjacency-graph)
+              :unless (gethash child visited)
+              :do
+              (format t ">dfs-add (~A ~A)~%" child (1+ distance))
+              (push (list child (1+ distance)) stack)))))
+
+    ;; returned in BFS level-order traversal.
+    (nreverse results)))
+
+;; Higher order bfs walk across an adjacency-graph encoded into a hash table.
+;; parent-0 -> (child-1 child-1 child-2 ... child-N)
+;; ...
+;; NOTE: This function assumes the adjacency-graph is encoded in a hash table.
+(defun bfs-edge (adjacency-graph root func &key (successors
+                                                 (lambda (node adj-graph)
+                                                   (gethash node adj-graph))))
+  (let ((queue (make-queue 1024)) ;; TODO: Having a constant here sucks.
+        (visited (make-hash-table))
+        (results ()))
+
+    (setf (gethash root visited) t)
+    (enqueue root queue)
+
+    ;; Perform the BFS
+    (loop :until (queue-empty-p queue) :do
+       (let ((parent (dequeue queue)))
+         (loop :for child :in (funcall successors parent adjacency-graph)
+            :unless (gethash child visited)
+            :do
+            (setf (gethash child visited) t)
+            (push (funcall func parent child) results)
+            (enqueue child queue))))
+
+    ;; returned in BFS level-order traversal.
+    (nreverse results)))
+
+
+
+(defun dfs-edge (adjacency-graph root func &key (successors
+                                                 (lambda (node adj-graph)
+                                                   (gethash node adj-graph))))
+  (let ((stack ())
+        (visited (make-hash-table))
+        (results ()))
+
+    (push root stack)
+
+    ;; Perform the DFS
+    (loop :until (null stack) :do
+       (let ((parent (pop stack)))
+         (unless (gethash parent visited)
+           (setf (gethash parent visited) t)
+           (loop :for child :in (reverse (funcall successors parent adjacency-graph))
+              :do
+              (unless (gethash child visited)
+                (push (funcall func parent child) results)
+                (push child stack))))))
+
+    ;; returned in BFS level-order traversal.
+    (nreverse results)))
+
+
+
+;; It might be worth to put the below into spanning-tree.lisp or something....
 
 ;; called in the convolve, for each cell which is connectable, store a
 ;; reference to the cell in list keyed by the (A B) and (B A) region
@@ -99,32 +212,24 @@
   ;; list of regions that it would be able to connect to.
   (loop :with adjacency-graph = (make-hash-table :test 'eql)
      :for (region-a region-b) :in (hash-table-keys connections)
-     :do (pushnew region-b (gethash region-a adjacency-graph))
+     :do
+     (pushnew region-b (gethash region-a adjacency-graph))
+     (pushnew region-a (gethash region-b adjacency-graph))
      :finally (return adjacency-graph)))
 
+(defun make-spanning-tree (adjacency-graph)
+  (let ((spanning (make-hash-table :test 'eql))
+        (random-region-id (rng 'int :min 1 :max *region*)))
 
-(defun make-spanning-tree (stage potential-connections graph)
-  (let ((spanning (make-hash-table))
-        (queue (make-queue (hash-table-count potential-connections)))
-        (visited (make-hash-table)))
+    ;; Define the root of the MST.
+    (setf (gethash :root spanning) random-region-id)
 
-    ;; First, we keep track of the root of the MSP.
-    (setf (gethash :root spanning) *region*)
+    ;; Then bfs-edge walk the adjacency-graph and assemble the MST.
+    (bfs-edge adjacency-graph random-region-id
+              (lambda (parent child)
+                (pushnew parent (gethash child spanning))
+                (pushnew child (gethash parent spanning))))
 
-    ;; Start the BFS and build the MSP at the same time.
-    (setf (gethash *region* visited) t)
-    (enqueue *region* queue)
-
-    ;; Perform the BFS
-    (loop :until (queue-empty-p queue) :do
-       (let ((current (dequeue queue)))
-         (loop :for edge :in (gethash current graph)
-            :unless (gethash edge visited)
-            :do
-            (setf (gethash edge visited) t)
-            ;; Record an edge in the MST
-            (push edge (gethash current spanning))
-            (enqueue edge queue))))
     spanning))
 
 (defmethod build-mst (stage)
@@ -142,11 +247,37 @@
     ;; the value a list of regions to which it has the potential to connect.
     (let* ((adjacency-graph (make-region-adjacency-graph potential-connections))
            ;; 3. Construct a spanning tree.
-           (mst (make-spanning-tree
-                 stage potential-connections adjacency-graph)))
+           (mst (make-spanning-tree adjacency-graph)))
 
-      ;; assemble this into a defstruct and shove into the stage.
+      (format t "Adjacency graph:~%")
+      (maphash (lambda (k v)
+                 (format t " node ~A -> ~A~%" k v))
+               adjacency-graph)
+
+      (format t "BFS of mst:~%")
+      (bfs-edge mst (gethash :root mst)
+                (lambda (parent child)
+                  (format t " parent = ~A child = ~A~%" parent child)))
+
+      (format t "DFS of mst:~%")
+      (dfs-edge mst (gethash :root mst)
+                (lambda (parent child)
+                  (format t " parent = ~A child = ~A~%" parent child)))
+
+
+      (format t "BFS of adjacency with root ~A~%" (gethash :root mst))
+      (bfs adjacency-graph (gethash :root mst)
+           (lambda (node)
+             (format t " ~A~%" node)))
+
+      (format t "DFS of adjacency with root ~A~%" (gethash :root mst))
+      (dfs adjacency-graph (gethash :root mst)
+           (lambda (node)
+             (format t " ~A~%" node)))
+
       (display-mst mst)
+
+      ;; 4. assemble this into a defstruct and shove into the stage.
       (setf (connectivity stage)
             (make-connectivity :mst mst
                                :potential-connections potential-connections)))))
@@ -154,4 +285,4 @@
 (defun display-mst (mst)
   (format t "Spanning tree:~%")
   (loop :for k :being :the :hash-keys :in mst :using (hash-value v) :do
-     (format t " region ~A connected to ~A~%" k v)))
+     (format t " node ~A -> ~A~%" k v)))
