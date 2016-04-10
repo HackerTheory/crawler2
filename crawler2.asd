@@ -5,7 +5,7 @@
   :license "MIT"
   :description "A procedural dungeon generation library."
   :depends-on (#:alexandria
-               #:cl-graph
+               #:graph
                #:cl-variates
                #:cl-speedy-queue)
   :serial t

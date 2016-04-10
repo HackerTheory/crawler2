@@ -3,6 +3,7 @@
 (defpackage #:crawler2
   (:use #:cl
         #:alexandria
+        #:graph
         #:cl-speedy-queue)
   (:import-from #:cl-variates
                #:ranq1-random-number-generator
