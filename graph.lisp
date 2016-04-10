@@ -33,11 +33,12 @@
                 (delete-edge copy e)))
     tree))
 
-(defun make-graphs (connections)
+(defun make-graphs (stage connections)
   (let* ((connectable (populate (make-instance 'graph)
                                 :nodes (connectable-nodes)
                                 :edges-w-values (connectable-edges connections)))
-         (mst (make-mst connectable)))
-    (%make-graphs :connectable connectable
-                 :mst mst
-                 :final (copy mst))))
+         (mst (make-mst connectable))
+         (graphs (%make-graphs :connectable connectable
+                               :mst mst
+                               :final (copy mst))))
+    (setf (graphs stage) graphs)))
