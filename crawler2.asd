@@ -16,6 +16,7 @@
    (:file "random")
    (:file "neighborhood")
    (:file "region")
+   (:file "graph")
    (:file "corridor")
    (:file "stage-basic")
    (:file "stage-buffered")
