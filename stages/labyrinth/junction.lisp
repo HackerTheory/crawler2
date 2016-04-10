@@ -35,7 +35,7 @@
 (defun carve-junctions (stage connections)
   (let ((graphs (graphs stage)))
     (flet ((carve-tree ()
-             (loop :for edge :in (mst-edges stage)
+             (loop :for edge :in (edges (mst graphs))
                    :for cell = (rng 'elt :list (gethash edge connections))
                    :do (make-junction stage cell)))
            (carve-loops ()
