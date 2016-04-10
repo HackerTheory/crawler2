@@ -30,7 +30,6 @@
     (let ((regions (remove nil (nmap nh #'region-id)))
           (cell (origin nh)))
       (pushnew cell (gethash regions connections))
-      (setf (gethash (reverse regions) connections) (gethash regions connections))
       (add-feature cell :connector))))
 
 (defun make-connection-graph (connections)
@@ -47,7 +46,8 @@
 
 (defun carve-junctions (stage connections)
   (let* ((graph (make-connection-graph connections))
-         (mst (minimum-spanning-tree graph)))
+         (mst (minimum-spanning-tree graph))
+         (full (copy mst)))
     (flet ((carve-tree ()
              (loop :for edge :in (sort (edges mst) #'list<)
                    :for cell = (rng 'elt :list (gethash edge connections))
@@ -56,11 +56,11 @@
              (loop :for edge :in (edges graph)
                    :for connectors = (gethash edge connections)
                    :for distance = (length (apply #'shortest-path mst edge))
-                   :when (> distance 2)
-                     :do (loop :for connector :in connectors
-                               :when (and connector
-                                          (< (rng 'inc) (loop-rate stage)))
-                                 :do (make-junction stage connector)))))
+                   :unless (or (<= distance 2)
+                               (has-edge-p full edge))
+                     :do (let ((cell (rng 'elt :list (gethash edge connections))))
+                           (make-junction stage cell)
+                           (add-edge full edge)))))
       (carve-tree)
       (carve-loops))))
 
