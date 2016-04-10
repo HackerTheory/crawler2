@@ -23,7 +23,6 @@
   (setf (cell stage x y) (make-instance 'cell :x x :y y)))
 
 (defmethod cell (stage x y &key)
-  (incf *cell-calls*)
   (aref (grid stage) x y))
 
 (defmethod (setf cell) (value stage x y &key)
@@ -69,10 +68,3 @@
 
 (defmethod add-feature (cell feature)
   (pushnew feature (features cell)))
-
-(defmacro profile-cell-calls (msg &body body)
-  (let ((result (gensym)))
-    `(let ((*cell-calls* 0))
-       (let ((,result (multiple-value-list (progn ,@body))))
-         (format t "~A: Cells looked up: ~A~%" ,msg *cell-calls*)
-         (values-list ,result)))))
