@@ -36,22 +36,31 @@
 (defun make-connection-graph (connections)
   (let* ((graph (make-instance 'graph))
          (nodes (loop :for x :from 1 :to *region* :collect x))
-         (edges (loop :for x :in (hash-table-keys connections) :collect (cons x 1))))
+         (edges (loop :with i = 0 :for x :in (hash-table-keys connections) :do (incf i) :collect (cons x i))))
     (populate graph :nodes nodes :edges-w-values edges)))
 
+(defun list< (a b)
+  (cond ((null a) (not (null b)))
+        ((null b) nil)
+        ((= (first a) (first b)) (list< (rest a) (rest b)))
+        (t (< (first a) (first b)))))
+
 (defun carve-junctions (stage connections)
-  (let ((graph (make-connection-graph connections)))
+  (let* ((graph (make-connection-graph connections))
+         (mst (minimum-spanning-tree graph)))
     (flet ((carve-tree ()
-             (loop :for edge :in (edges (minimum-spanning-tree graph))
+             (loop :for edge :in (sort (edges mst) #'list<)
                    :for cell = (rng 'elt :list (gethash edge connections))
                    :do (make-junction stage cell)))
            (carve-loops ()
              (loop :for edge :in (edges graph)
-                :for connectors = (gethash edge connections)
-                :do (loop :for connector :in connectors
-                       :when (and connector
-                                  (< (rng 'inc) (loop-rate stage)))
-                       :do (make-junction stage connector)))))
+                   :for connectors = (gethash edge connections)
+                   :for distance = (length (apply #'shortest-path mst edge))
+                   :when (> distance 2)
+                     :do (loop :for connector :in connectors
+                               :when (and connector
+                                          (< (rng 'inc) (loop-rate stage)))
+                                 :do (make-junction stage connector)))))
       (carve-tree)
       (carve-loops))))
 
