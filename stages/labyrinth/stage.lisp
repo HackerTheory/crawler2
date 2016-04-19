@@ -13,6 +13,9 @@
    (door-rate :reader door-rate
               :initarg :door-rate
               :initform 0.5)
+   (hollow-walls :reader hollow-walls
+                 :initarg :hollow-walls
+                 :initform nil)
    (rooms :accessor rooms
           :initform nil)))
 
@@ -43,4 +46,5 @@
   (create-corridors stage)
   (connect-regions stage)
   (erode-dead-ends stage)
-  (create-stairs stage))
+  (create-stairs stage)
+  (erode-walls stage))

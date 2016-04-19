@@ -77,3 +77,9 @@
   (process stage nil #'filter-dead-end #'uncarve-dead-end
            :items (dead-ends stage)
            :nh-generator (lambda (cell) (cell-nh stage cell (layout :orthogonal)))))
+
+(defmethod erode-walls (stage)
+  (when (hollow-walls stage)
+    (let ((cells (collect stage (layout :rect) #'filter-carvable)))
+      (dolist (cell cells)
+        (carve stage (origin cell) :feature :space)))))
