@@ -20,8 +20,13 @@
            #:height
            #:grid
            #:cell
+           #:cell-x
+           #:cell-y
            #:x
            #:y
+           #:origin
+           #:convolve
+           #:layout
            #:carvedp
            #:region-id
            #:featuresp))
