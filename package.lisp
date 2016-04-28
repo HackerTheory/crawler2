@@ -22,6 +22,8 @@
            #:cell
            #:cell-x
            #:cell-y
+           #:cell-index
+           #:valid-cell-p
            #:x
            #:y
            #:origin

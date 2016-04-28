@@ -5,7 +5,7 @@
       :initarg :x)
    (y :reader cell-y
       :initarg :y)
-   (carvedp :accessor carvedp
+   (carvedp :accessor %carvedp
             :initform nil)
    (region-id :accessor region-id
               :initform nil)
@@ -25,16 +25,31 @@
 (defmethod cell (stage x y &key)
   (aref (grid stage) x y))
 
+(defmethod cell-index (stage cell)
+  (with-slots (width height) stage
+    (with-slots (x y) cell
+      (+ (* y width) x))))
+
+(defmethod carvedp (cell)
+  (when cell
+    (%carvedp cell)))
+
+(defmethod (setf carvedp) (value cell)
+  (when cell
+    (setf (%carvedp cell) value)))
+
 (defmethod (setf cell) (value stage x y &key)
   (setf (aref (grid stage) x y) value))
 
 (defmethod valid-cell-p (stage x y)
   (with-slots (height width) stage
-    (when (and (not (minusp x))
-               (not (minusp y))
-               (< x width)
-               (< y height))
-      (cell stage x y))))
+    (let ((x (floor x))
+          (y (floor y)))
+      (when (and (not (minusp x))
+                 (not (minusp y))
+                 (< x width)
+                 (< y height))
+        (cell stage x y)))))
 
 (defmethod stage-border-p (stage cell)
   (with-slots (width height) stage
