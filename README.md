@@ -25,6 +25,12 @@ there are optional arguments to control the generation of the chosen type.
 
 The optional parameters are specified as keyword/values:
 
+For the LABYRINTH stage type, the optional arguments to MAKE-STAGE are:
+
+* `:WIDTH`: Specifies the width of the stage in cells.
+
+* `:HEIGHT`: Specifies the height of the stage in cells.
+
 * `:CORRIDOR-WINDINESS`: Specifies how windy corridors will be, as a range from
 `0.0` to `1.0`. This has minimal effect for densely packed rooms - see
 `:ROOM-DENSITY` below to control this. Default value is `0.0`.
@@ -78,7 +84,7 @@ example system and generate a map with:
 
 ```lisp
 (ql:quickload :crawler-examples)
-(crawler-examples:run 'labyrinth)
+(crawler-examples:run 'crawler2:labyrinth)
 ```
 
 The examples require Sketch, which is part of Quicklisp. However, it depends on
