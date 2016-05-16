@@ -1,11 +1,11 @@
 (in-package :crawler2-examples)
 
-(defsketch example-labyrinth (:title "Example Labyrinth"
-                              :width (* *cell-size* (width *stage*))
-                              :height (* *cell-size* (height *stage*))
-                              :y-axis :up
-                              :debug :scancode-grave)
-    ((attrs))
+(defsketch example-labyrinth
+    ((title "Example Labyrinth")
+     (width (* *cell-size* (width *stage*)))
+     (height (* *cell-size* (height *stage*)))
+     (y-axis :up)
+     (attrs nil :accessor attrs))
   (draw))
 
 (defmethod regenerate ((window example-labyrinth))

@@ -1,0 +1,11 @@
+#*
+*.DS_Store
+*.dx64fsl
+*.falsl
+*.fas
+*.fasl
+*.lx64fsl
+*.~lock*
+*~
+.#*
+\#*\#
