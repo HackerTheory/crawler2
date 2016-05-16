@@ -97,3 +97,4 @@ leading down, etc.
 Within the example window the following input is accepted:
 
 * Left mouse-click: Generate and display a new stage of the same size.
+
