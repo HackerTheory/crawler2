@@ -73,8 +73,6 @@ Currently, this can be one or more of the following:
 
 ## Examples
 
-![Example Stage](/images/example.png)
-
 If you want to try out the example map generator graphically, load the
 example system and generate a map with:
 
