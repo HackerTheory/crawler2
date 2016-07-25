@@ -17,28 +17,14 @@
   (loop :for edge :in (hash-table-keys connections)
         :collect (cons edge 1)))
 
-(defun make-mst (graph)
-  (assert (connectedp graph) (graph) "~S is not connected" graph)
-  (let ((copy (copy graph))
-        (tree (populate (make-instance 'graph)
-                        :nodes (list (rng 'elt :list (nodes graph)))))
-        (total-nodes (length (nodes graph))))
-    (loop :until (= (length (nodes tree)) total-nodes)
-          :do (when-let ((e (car (sort
-                                  (remove-if-not
-                                   {intersection (set-difference (nodes copy) (nodes tree))}
-                                   (mapcan {node-edges copy} (nodes tree)))
-                                  #'< :key {edge-value copy}))))
-                (add-edge tree e (edge-value graph e))
-                (delete-edge copy e)))
-    tree))
-
 (defun make-graphs (stage connections)
   (let* ((connectable (populate (make-instance 'graph)
                                 :nodes (connectable-nodes)
                                 :edges-w-values (connectable-edges connections)))
-         (mst (make-mst connectable))
-         (graphs (%make-graphs :connectable connectable
-                               :mst mst
-                               :final (copy mst))))
-    (setf (graphs stage) graphs)))
+         (mst (minimum-spanning-tree connectable
+                                     (populate (make-instance 'graph)
+                                               :nodes (list (rng 'elt :list (nodes connectable)))))))
+    (setf (graphs stage)
+          (%make-graphs :connectable connectable
+                        :mst mst
+                        :final (copy mst)))))
