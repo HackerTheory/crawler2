@@ -13,6 +13,7 @@
 
 
 % how about this map as a test, Lower Left corner is (0,0).
+% d are doors.
 % ###########
 % #...###...#
 % #...###...#
@@ -60,58 +61,65 @@ cell(9, 6). cell(9, 7). cell(9, 8). cell(9, 9). cell(9, 10).
 cell(10, 0). cell(10, 1). cell(10, 2). cell(10, 3). cell(10, 4). cell(10, 5).
 cell(10, 6). cell(10, 7). cell(10, 8). cell(10, 9). cell(10, 10).
 
-% Define (only) the walkable cells.
+% Define (only) the floor cells. a non-floor cell is a wall cell.
 % scanning from bottom to top, left to right
-walkable(cell(1,5)).
-walkable(cell(1,6)).
-walkable(cell(1,7)).
-walkable(cell(1,8)).
-walkable(cell(1,9)).
-walkable(cell(2,4)).
-walkable(cell(2,5)).
-walkable(cell(2,9)).
-walkable(cell(3,4)).
-walkable(cell(3,9)).
-walkable(cell(4,1)).
-walkable(cell(4,2)).
-walkable(cell(4,3)).
-walkable(cell(4,4)).
-walkable(cell(4,9)).
-walkable(cell(5,1)).
-walkable(cell(5,9)).
-walkable(cell(6,1)). % will be a junction and door too
-walkable(cell(6,9)). % will be a junction and door too
-walkable(cell(7,1)).
-walkable(cell(7,2)).
-walkable(cell(7,3)).
-walkable(cell(7,7)).
-walkable(cell(7,8)).
-walkable(cell(7,9)).
-walkable(cell(8,1)).
-walkable(cell(8,2)).
-walkable(cell(8,3)).
-walkable(cell(8,7)).
-walkable(cell(8,8)).
-walkable(cell(8,9)).
-walkable(cell(9,1)).
-walkable(cell(9,2)).
-walkable(cell(9,3)).
-walkable(cell(9,7)).
-walkable(cell(9,8)).
-walkable(cell(9,9)).
+floor(cell(1,5)).
+floor(cell(1,6)).
+floor(cell(1,7)).
+floor(cell(1,8)).
+floor(cell(1,9)).
+floor(cell(2,4)).
+floor(cell(2,5)).
+floor(cell(2,9)).
+floor(cell(3,4)).
+floor(cell(3,9)).
+floor(cell(4,1)).
+floor(cell(4,2)).
+floor(cell(4,3)).
+floor(cell(4,4)).
+floor(cell(4,9)).
+floor(cell(5,1)).
+floor(cell(5,9)).
+floor(cell(6,1)). % will be a junction and door too
+floor(cell(6,9)). % will be a junction and door too
+floor(cell(7,1)).
+floor(cell(7,2)).
+floor(cell(7,3)).
+floor(cell(7,7)).
+floor(cell(7,8)).
+floor(cell(7,9)).
+floor(cell(8,1)).
+floor(cell(8,2)).
+floor(cell(8,3)).
+floor(cell(8,7)).
+floor(cell(8,8)).
+floor(cell(8,9)).
+floor(cell(9,1)).
+floor(cell(9,2)).
+floor(cell(9,3)).
+floor(cell(9,7)).
+floor(cell(9,8)).
+floor(cell(9,9)).
 
-% a wall is a non-walkable cell (\+ means true if it can't prove the goal).
-wall(X) :- \+ walkable(X).
+% a wall is a non-floor cell (\+ means true if it can't prove the goal).
+wall(Cell) :- \+ floor(Cell).
 
-% Define the junctions
+% Some cells are part of rooms.
+% TODO 
+
+% Some cells are part of corridors.
+% TODO 
+
+% Define the junctions.
 junction(cell(6,1)).
 junction(cell(6,9)).
 
-% Define the doors (which are walkable AND a junction).
-door(Door) :- walkable(Door), junction(Door).
+% Define the doors (which are a floor AND a junction). Currently, this means
+% that ALL of those locations are doors.
+door(Door) :- floor(Door), junction(Door).
 
-% laboriously define walkable neighbors
-
+% Define the floor neighbors to each floor cell.
+% TODO
 
 
 
