@@ -112,6 +112,7 @@ wall(Cell) :- \+ floor(Cell).
 % TODO 
 
 % Define the junctions.
+:- dynamic junction/1.
 junction(cell(6,1)).
 junction(cell(6,9)).
 
@@ -123,6 +124,14 @@ door(Door) :- floor(Door), junction(Door).
 % TODO
 
 
-
-
+% Example test, which works to alter the % knowlege base 
+% (due to ':- dynamic junction/1.'). 
+% To see it work, do this:
+% junction(cell(0,0)).
+%   -> false
+% doit(cell(0,0)).
+%   -> true
+% junction(cell(0,0)).
+%   -> true.
+doit(X) :- assert(junction(X)).
 
