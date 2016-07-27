@@ -63,6 +63,7 @@ cell(10, 6). cell(10, 7). cell(10, 8). cell(10, 9). cell(10, 10).
 
 % Define (only) the floor cells. a non-floor cell is a wall cell.
 % scanning from bottom to top, left to right
+:- dynamic floor/2.
 floor(cell(1,5)).
 floor(cell(1,6)).
 floor(cell(1,7)).
