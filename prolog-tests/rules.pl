@@ -1,6 +1,22 @@
+% This prolog file builds a knowledge base about this map (origin Lower Left):
+% j are junctions.
+% d are doors.
+% ###########
+% #...###...#
+% #...###...#
+% #...###...#
+% #d#######j#
+% #.#######.#
+% #....####.#
+% ####.####.#
+% ####..###.#
+% #####.....#
+% ###########
+
+% axion's original rules.
 % 1) A door can only be added to a cell with a junction
 % 2) A floor can only be added to a cell with a wall, and must remove
-% the wall in the process
+% the wall in the process.
 % 3) A wall can only be added to a cell with a floor, and must remove
 % the floor in the process
 % 4) A door can only be added to a floor cell
@@ -12,22 +28,43 @@
 % true, the other must be set to nil
 
 
-% how about this map as a test, Lower Left corner is (0,0).
-% d are doors.
-% ###########
-% #...###...#
-% #...###...#
-% #...###...#
-% #d#######d#
-% #.#######.#
-% #....####.#
-% ####.####.#
-% ####..###.#
-% #####.....#
-% ###########
 
-% Define the cells themselves. 
+% Rewritten rules more suitable for prolog. (NOT DONE).
+
+% A cell has a 2d position.
+% All cells are uncarved, unless they are carved.
+% A carved cell _may_ either be a room cell or a corridor cell.
+
+% The offset of a cell is another defined cell located at (dx, dy) from it.
+% Offset shortcuts of e, ne, n, nw, e, sw, s, se are available.
+
+% A vjunct cell is a corridor cell whose:
+% 	north neighbor cell is a room cell and 
+%	the south neighbor cell is a corridor cell
+% OR
+% 	north neighbor cell is a corridor cell and 
+%	the south neighbor cell is a room cell
+
+% An hjunct cell is a corridor cell whose:
+% 	east neighbor cell is a room cell and 
+%	the west neighbor cell is a corridor cell
+% OR
+% 	west neighbor cell is a corridor cell and 
+%	the east neighbor cell is a room cell
+
+% A junction cell is a cell that is an hjunct OR vjunct cell.
+
+% A cell may be a door if it is also a junction.
+% A cell may be a trap if it is also a floor
+
+
+% ---------------------------------------------------------------------------
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define each cell itself. Only those which are defined are actually on the map.
 % cell(rowindex, colindex).
+% There is no ':- dynamic cell/2.' since we can't add/delete any new cells.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cell(0, 0). cell(0, 1). cell(0, 2). cell(0, 3). cell(0, 4). cell(0, 5).
 cell(0, 6). cell(0, 7). cell(0, 8). cell(0, 9). cell(0, 10).
 
@@ -61,77 +98,166 @@ cell(9, 6). cell(9, 7). cell(9, 8). cell(9, 9). cell(9, 10).
 cell(10, 0). cell(10, 1). cell(10, 2). cell(10, 3). cell(10, 4). cell(10, 5).
 cell(10, 6). cell(10, 7). cell(10, 8). cell(10, 9). cell(10, 10).
 
-% Define (only) the floor cells. a non-floor cell is a wall cell.
-% scanning from bottom to top, left to right
-:- dynamic floor/2.
-floor(cell(1,5)).
-floor(cell(1,6)).
-floor(cell(1,7)).
-floor(cell(1,8)).
-floor(cell(1,9)).
-floor(cell(2,4)).
-floor(cell(2,5)).
-floor(cell(2,9)).
-floor(cell(3,4)).
-floor(cell(3,9)).
-floor(cell(4,1)).
-floor(cell(4,2)).
-floor(cell(4,3)).
-floor(cell(4,4)).
-floor(cell(4,9)).
-floor(cell(5,1)).
-floor(cell(5,9)).
-floor(cell(6,1)). % will be a junction and door too
-floor(cell(6,9)). % will be a junction and door too
-floor(cell(7,1)).
-floor(cell(7,2)).
-floor(cell(7,3)).
-floor(cell(7,7)).
-floor(cell(7,8)).
-floor(cell(7,9)).
-floor(cell(8,1)).
-floor(cell(8,2)).
-floor(cell(8,3)).
-floor(cell(8,7)).
-floor(cell(8,8)).
-floor(cell(8,9)).
-floor(cell(9,1)).
-floor(cell(9,2)).
-floor(cell(9,3)).
-floor(cell(9,7)).
-floor(cell(9,8)).
-floor(cell(9,9)).
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% offset/4
+% Bind NeighborCell to the (OFF_X,OFF_Y) offset of the specified cell.
+% It will bind NeighborCell to false if the cell it computes is not in the KB,
+% Otherwise NeighborCell will be bound to the computed cell.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+offset(cell(X,Y), OFF_X, OFF_Y, OffsetCell) :-
+	number(OFF_X), number(OFF_Y),
+	NX is X + OFF_X,
+	NY is Y + OFF_Y,
+	% enforce that the probed cell location is actually valid.
+	cell(NX, NY),
+	OffsetCell = cell(NX, NY).
 
-% a wall is a non-floor cell (\+ means true if it can't prove the goal).
-wall(Cell) :- \+ floor(Cell).
+% convenience direction rules
+e(cell(X,Y), Cell) :- offset(cell(X, Y), 1, 0, Cell).
+ne(cell(X,Y), Cell) :- offset(cell(X, Y), 1, 1, Cell).
+n(cell(X,Y), Cell) :- offset(cell(X, Y), 0, 1, Cell).
+nw(cell(X,Y), Cell) :- offset(cell(X, Y), -1, 1, Cell).
+w(cell(X,Y), Cell) :- offset(cell(X, Y), -1, 0, Cell).
+sw(cell(X,Y), Cell) :- offset(cell(X, Y), -1, -1, Cell).
+s(cell(X,Y), Cell) :- offset(cell(X, Y), 0, -1, Cell).
+se(cell(X,Y), Cell) :- offset(cell(X, Y), 1, -1, Cell).
 
-% Some cells are part of rooms.
-% TODO 
-
-% Some cells are part of corridors.
-% TODO 
-
-% Define the junctions.
+% Now, we define all of the relations that cells can be a part of.
+:- dynamic carved/1.
+:- dynamic corridor/1.
+:- dynamic room/1.
 :- dynamic junction/1.
+
+% Scanning from left to right, and bottom to top, define the carved
+% cells and what kind of cell they are.
+carved(cell(1,5)).
+carved(cell(1,6)).
+carved(cell(1,7)).
+carved(cell(1,8)).
+carved(cell(1,9)).
+carved(cell(2,4)).
+carved(cell(2,5)).
+carved(cell(2,9)).
+carved(cell(3,4)).
+carved(cell(3,9)).
+carved(cell(4,1)).
+carved(cell(4,2)).
+carved(cell(4,3)).
+carved(cell(4,4)).
+carved(cell(4,9)).
+carved(cell(5,1)).
+carved(cell(5,9)).
+carved(cell(6,1)).
+carved(cell(6,9)).
+carved(cell(7,1)).
+carved(cell(7,2)).
+carved(cell(7,3)).
+carved(cell(7,7)).
+carved(cell(7,8)).
+carved(cell(7,9)).
+carved(cell(8,1)).
+carved(cell(8,2)).
+carved(cell(8,3)).
+carved(cell(8,7)).
+carved(cell(8,8)).
+carved(cell(8,9)).
+carved(cell(9,1)).
+carved(cell(9,2)).
+carved(cell(9,3)).
+carved(cell(9,7)).
+carved(cell(9,8)).
+carved(cell(9,9)).
+
+corridor(cell(1,5)).
+corridor(cell(1,6)).
+corridor(cell(1,7)).
+corridor(cell(1,8)).
+corridor(cell(1,9)).
+corridor(cell(2,4)).
+corridor(cell(2,5)).
+corridor(cell(2,9)).
+corridor(cell(3,4)).
+corridor(cell(3,9)).
+corridor(cell(4,1)).
+corridor(cell(4,2)).
+corridor(cell(4,3)).
+corridor(cell(4,4)).
+corridor(cell(4,9)).
+corridor(cell(5,1)).
+corridor(cell(5,9)).
+corridor(cell(6,1)).
+corridor(cell(6,9)).
+
+room(cell(7,1)).
+room(cell(7,2)).
+room(cell(7,3)).
+room(cell(7,7)).
+room(cell(7,8)).
+room(cell(7,9)).
+room(cell(8,1)).
+room(cell(8,2)).
+room(cell(8,3)).
+room(cell(8,7)).
+room(cell(8,8)).
+room(cell(8,9)).
+room(cell(9,1)).
+room(cell(9,2)).
+room(cell(9,3)).
+room(cell(9,7)).
+room(cell(9,8)).
+room(cell(9,9)).
+
 junction(cell(6,1)).
 junction(cell(6,9)).
 
-% Define the doors (which are a floor AND a junction). Currently, this means
-% that ALL of those locations are doors.
-door(Door) :- floor(Door), junction(Door).
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Keys
+% Dynamic means here we can allow/disable other objects to be keys.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- dynamic key/1.
+key(k1).
 
-% Define the floor neighbors to each floor cell.
-% TODO
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Doors
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- dynamic door/1.
+:- dynamic door_location/2.
+:- dynamic place_door/2.
+:- dynamic closed/1. % open by default.
+:- dynamic locked/1. % unlocked by default.
+:- dynamic locked_by/2. % not locked_by by default.
+
+% Define a door.
+door(d1).
+
+% It is currently closed.
+closed(d1).
+
+% The door is locked with key k1.
+locked_by(d1, k1).
+
+% This is how we place a door into the maze. It must go at a junction.
+place_door(Door, Cell) :- 
+	carved(Cell),
+	junction(Cell), 
+	assert(door_location(Door, Cell)).
+
+% Place the door we just defined.
+:- place_door(d1, cell(6,1)).
+
+% Basic check to see if a door is locked.
+locked(Door) :- locked_by(Door, Key), key(Key), closed(Door).
+
+% Specify the rules to unlock and lock a door.
+unlock_door_with_key(Door, Key) :- 
+	key(Key),
+	door(Door), closed(Door), locked_by(Door, Key), 
+	retract(locked_by(Door, Key)).
+
+lock_door_with_key(Door, Key) :-
+	key(Key),
+	door(Door), \+(locked_by(Door, Key)), closed(Door),
+	assert(locked_by(Door, Key)).
 
 
-% Example test, which works to alter the % knowlege base 
-% (due to ':- dynamic junction/1.'). 
-% To see it work, do this:
-% junction(cell(0,0)).
-%   -> false
-% doit(cell(0,0)).
-%   -> true
-% junction(cell(0,0)).
-%   -> true.
-doit(X) :- assert(junction(X)).
 
