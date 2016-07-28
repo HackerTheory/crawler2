@@ -27,6 +27,12 @@
 % 7) a floor's sub-features can only be 1 of corridor or room. if one is
 % true, the other must be set to nil
 
+% ((:wall . (:walkable nil :material (:stone)))
+% (:floor . (:walkable t :corridor t :room nil :entry-distance -1 :region 1 :material (:stone :moss)))
+% (:entry . (:direction :up :method :staircase))
+% (:junction . (:regions (1 2)))
+% (:door . (:closed t :locked t :secret nil :orientation :vertical :material (:wood)))
+% (:trap . (:trigger :door-open :type :poison-dart)))
 
 
 % Rewritten rules more suitable for prolog. (NOT DONE).
