@@ -32,8 +32,8 @@
 % Rewritten rules more suitable for prolog. (NOT DONE).
 
 % A cell has a 2d position.
-% All cells are uncarved, unless they are carved.
-% A carved cell _may_ either be a room cell or a corridor cell.
+% All cells must be carved or uncarved, and default to uncarved.
+% The  of a cell is either room or cell.
 
 % The offset of a cell is another defined cell located at (dx, dy) from it.
 % Offset shortcuts of e, ne, n, nw, e, sw, s, se are available.
@@ -128,6 +128,7 @@ se(cell(X,Y), Cell) :- offset(cell(X, Y), 1, -1, Cell).
 :- dynamic room/1.
 :- dynamic junction/1.
 
+
 % Scanning from left to right, and bottom to top, define the carved
 % cells and what kind of cell they are.
 carved(cell(1,5)).
@@ -209,6 +210,21 @@ room(cell(9,9)).
 
 junction(cell(6,1)).
 junction(cell(6,9)).
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Terrain types
+% Can only add terrain to carved cells.
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+:- dynamic terrain/2.
+add_terrain(Cell, TerrainType) :- 
+	carved(Cell),
+	\+(terrain(Cell, TerrainType)), 
+	assert(terrain(Cell, TerrainType)).
+
+remove_terrain(Cell, TerrainType) :- 
+	carved(Cell),
+	terrain(Cell, TerrainType),
+	retract(terrain(Cell, TerrainType)).
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Keys
