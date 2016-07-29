@@ -38,7 +38,7 @@
 % Rewritten rules more suitable for prolog. (NOT DONE).
 
 % A cell has a 2d position.
-% All cells must be carved or uncarved, and default to uncarved.
+% All cells must have space or not have space.
 % The topology of a cell is either room or cell.
 
 % The offset of a cell is another defined cell located at (dx, dy) from it.
@@ -129,7 +129,7 @@ s(cell(X,Y), Cell) :- offset(cell(X, Y), 0, -1, Cell).
 se(cell(X,Y), Cell) :- offset(cell(X, Y), 1, -1, Cell).
 
 % Now, we define all of the relations that cells can be a part of.
-:- dynamic carved/1.
+:- dynamic has_space/1.
 :- dynamic corridor/1.
 :- dynamic room/1.
 :- dynamic junction/1.
@@ -137,43 +137,43 @@ se(cell(X,Y), Cell) :- offset(cell(X, Y), 1, -1, Cell).
 
 % Scanning from left to right, and bottom to top, define the carved
 % cells and what kind of cell they are.
-carved(cell(1,5)).
-carved(cell(1,6)).
-carved(cell(1,7)).
-carved(cell(1,8)).
-carved(cell(1,9)).
-carved(cell(2,4)).
-carved(cell(2,5)).
-carved(cell(2,9)).
-carved(cell(3,4)).
-carved(cell(3,9)).
-carved(cell(4,1)).
-carved(cell(4,2)).
-carved(cell(4,3)).
-carved(cell(4,4)).
-carved(cell(4,9)).
-carved(cell(5,1)).
-carved(cell(5,9)).
-carved(cell(6,1)).
-carved(cell(6,9)).
-carved(cell(7,1)).
-carved(cell(7,2)).
-carved(cell(7,3)).
-carved(cell(7,7)).
-carved(cell(7,8)).
-carved(cell(7,9)).
-carved(cell(8,1)).
-carved(cell(8,2)).
-carved(cell(8,3)).
-carved(cell(8,7)).
-carved(cell(8,8)).
-carved(cell(8,9)).
-carved(cell(9,1)).
-carved(cell(9,2)).
-carved(cell(9,3)).
-carved(cell(9,7)).
-carved(cell(9,8)).
-carved(cell(9,9)).
+has_space(cell(1,5)).
+has_space(cell(1,6)).
+has_space(cell(1,7)).
+has_space(cell(1,8)).
+has_space(cell(1,9)).
+has_space(cell(2,4)).
+has_space(cell(2,5)).
+has_space(cell(2,9)).
+has_space(cell(3,4)).
+has_space(cell(3,9)).
+has_space(cell(4,1)).
+has_space(cell(4,2)).
+has_space(cell(4,3)).
+has_space(cell(4,4)).
+has_space(cell(4,9)).
+has_space(cell(5,1)).
+has_space(cell(5,9)).
+has_space(cell(6,1)).
+has_space(cell(6,9)).
+has_space(cell(7,1)).
+has_space(cell(7,2)).
+has_space(cell(7,3)).
+has_space(cell(7,7)).
+has_space(cell(7,8)).
+has_space(cell(7,9)).
+has_space(cell(8,1)).
+has_space(cell(8,2)).
+has_space(cell(8,3)).
+has_space(cell(8,7)).
+has_space(cell(8,8)).
+has_space(cell(8,9)).
+has_space(cell(9,1)).
+has_space(cell(9,2)).
+has_space(cell(9,3)).
+has_space(cell(9,7)).
+has_space(cell(9,8)).
+has_space(cell(9,9)).
 
 corridor(cell(1,5)).
 corridor(cell(1,6)).
@@ -223,12 +223,24 @@ junction(cell(6,9)).
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 :- dynamic terrain/2.
 add_terrain(Cell, TerrainType) :- 
-	carved(Cell),
+	has_space(Cell),
 	\+(terrain(Cell, TerrainType)), 
 	assert(terrain(Cell, TerrainType)).
 
+% This is a test of how to write a rule such that we can find out why it
+% failed. I deeply suspect this is in no way idiomatic prolog.
+add_terrain2(Cell, TerrainType, Status) :- 
+	(has_space(Cell) ->  
+		(\+(terrain(Cell, TerrainType)) -> 
+			(assert(terrain(Cell, TerrainType)) ->
+				Status = ok ; 
+				Status = not_ok:cant_assert_terrain) ;
+			Status = not_ok:already_has_terrain)
+	; Status = not_ok:no_space).
+
+
 remove_terrain(Cell, TerrainType) :- 
-	carved(Cell),
+	has_space(Cell),
 	terrain(Cell, TerrainType),
 	retract(terrain(Cell, TerrainType)).
 
@@ -260,7 +272,7 @@ locked_by(d1, k1).
 
 % This is how we place a door into the maze. It must go at a junction.
 place_door(Door, Cell) :- 
-	carved(Cell),
+	has_space(Cell),
 	junction(Cell), 
 	assert(door_location(Door, Cell)).
 
@@ -280,6 +292,7 @@ lock_door_with_key(Door, Key) :-
 	key(Key),
 	door(Door), \+(locked_by(Door, Key)), closed(Door),
 	assert(locked_by(Door, Key)).
+
 
 
 
