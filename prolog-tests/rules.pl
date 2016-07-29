@@ -233,10 +233,10 @@ add_terrain2(Cell, TerrainType, Status) :-
 	(has_space(Cell) ->  
 		(\+(terrain(Cell, TerrainType)) -> 
 			(assert(terrain(Cell, TerrainType)) ->
-				Status = ok ; 
-				Status = not_ok:cant_assert_terrain) ;
-			Status = not_ok:already_has_terrain)
-	; Status = not_ok:no_space).
+				Status = [ true ]; 
+				Status = [ false, cant_assert_terrain ]) ;
+			Status = [ false, already_has_terrain ])
+	; Status = [ false, no_space]).
 
 
 remove_terrain(Cell, TerrainType) :- 
