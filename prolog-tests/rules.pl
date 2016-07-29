@@ -39,7 +39,7 @@
 
 % A cell has a 2d position.
 % All cells must be carved or uncarved, and default to uncarved.
-% The  of a cell is either room or cell.
+% The topology of a cell is either room or cell.
 
 % The offset of a cell is another defined cell located at (dx, dy) from it.
 % Offset shortcuts of e, ne, n, nw, e, sw, s, se are available.
